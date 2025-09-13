@@ -30,51 +30,19 @@
     .char-btn{padding:10px 18px;margin:4px;font-size:16px;border:none;border-radius:8px;background:#ffe0eb;cursor:pointer}
     .char-btn.selected{background:#ff4081;color:#fff}
 
-    /* --- 순위표 스타일 --- */
-    .ranking {
-      margin-top:20px;
-      padding:16px;
-      border-radius:12px;
-      background:linear-gradient(135deg,#fff8dc,#ffd700);
-      box-shadow:0 4px 10px rgba(0,0,0,0.15);
-    }
-    .ranking h3 {
-      color:#b8860b;
-      text-align:center;
-      margin-bottom:12px;
-      font-size:20px;
-    }
-    .ranking ol {
-      list-style:none;
-      padding:0;
-      margin:0;
-    }
-    .ranking li {
-      margin:6px 0;
-      padding:8px 12px;
-      border-radius:8px;
-      font-size:16px;
-      font-weight:bold;
-      background:#fffbe6;
-      box-shadow:0 2px 5px rgba(0,0,0,0.1);
-    }
-    .ranking li:first-child {
-      background:linear-gradient(135deg,#fffacd,#ffd700);
-      color:#8b7500;
-    }
-    .ranking li:nth-child(2) {
-      background:linear-gradient(135deg,#f0f0f0,#c0c0c0);
-      color:#444;
-    }
-    .ranking li:nth-child(3) {
-      background:linear-gradient(135deg,#fff0e0,#cd7f32);
-      color:#5a3a1a;
-    }
+    /* 순위표: 황금 테마 */
+    .ranking {margin-top:20px;padding:16px;border-radius:12px;background:linear-gradient(135deg,#fff8dc,#ffd700);box-shadow:0 4px 10px rgba(0,0,0,0.15)}
+    .ranking h3 {color:#b8860b;text-align:center;margin-bottom:12px;font-size:20px}
+    .ranking ol {list-style:none;padding:0;margin:0}
+    .ranking li {margin:6px 0;padding:8px 12px;border-radius:8px;font-size:16px;font-weight:bold;background:#fffbe6;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+    .ranking li:first-child {background:linear-gradient(135deg,#fffacd,#ffd700);color:#8b7500}
+    .ranking li:nth-child(2) {background:linear-gradient(135deg,#f0f0f0,#c0c0c0);color:#444}
+    .ranking li:nth-child(3) {background:linear-gradient(135deg,#fff0e0,#cd7f32);color:#5a3a1a}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>신준열규열 공부게임(v1.1)</h1>
+    <h1>신준열규열 공부게임(v.1.1)</h1>
     <div class="desc">
       <p><b>덧셈 게임</b>: 1~20 버튼으로 정답을 입력하여 빠르게 푸는 게임 (5문제 세트)</p>
       <p><b>모으기와 가르기</b>: 10을 기준으로 식을 단계별로 완성합니다. 버튼으로 빈칸 3개를 <b>순서대로</b> 맞혀야 합니다 (3문제 세트)</p>
@@ -88,7 +56,7 @@
         <button class="char-btn" data-name="수박이">수박이</button>
       </div>
       <div style="margin:12px 0;">또는 직접 입력:</div>
-      <input id="playerName" placeholder="이름 입력 (없으면 캐릭터/메롱)" />
+      <input id="playerName" placeholder="이름 입력 (없으면 캐릭터/무명)" />
       <div class="center-btn">
         <button id="additionSelect" class="start-big">1. 덧셈 게임</button>
         <button id="splitSelect" class="start-big">2. 모으기와 가르기</button>
@@ -138,9 +106,9 @@
   <audio id="soundWrong" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
 
   <script>
+    // --- 캐릭터 선택/수동 입력 ---
     const charButtons = document.querySelectorAll('.char-btn');
     let selectedChar = '';
-
     charButtons.forEach(btn=>{
       btn.addEventListener('click',()=>{
         charButtons.forEach(b=>b.classList.remove('selected'));
@@ -148,17 +116,208 @@
         selectedChar = btn.dataset.name;
       });
     });
-
     function getPlayerName(){
       const manual = document.getElementById('playerName').value.trim();
       if(manual) return manual;
       if(selectedChar) return selectedChar;
-      return '메롱';
+      return '무명';
+    }
+
+    // --- DOM 참조 ---
+    const additionSelect=document.getElementById('additionSelect');
+    const splitSelect=document.getElementById('splitSelect');
+    const startScreen=document.getElementById('startScreen');
+    const additionScreen=document.getElementById('additionGameScreen');
+    const splitScreen=document.getElementById('splitGameScreen');
+    const results=document.getElementById('results');
+
+    const qNumberAdd=document.getElementById('qNumberAdd');
+    const problemBoxAdd=document.getElementById('problemBoxAdd');
+    const feedbackAdd=document.getElementById('feedbackAdd');
+    const timerAdd=document.getElementById('timerAdd');
+    const keypadAdd=document.getElementById('keypadAdd');
+    const backFromAdd=document.getElementById('backFromAdd');
+
+    const qNumberSplit=document.getElementById('qNumberSplit');
+    const problemBoxSplit=document.getElementById('problemBoxSplit');
+    const feedbackSplit=document.getElementById('feedbackSplit');
+    const timerSplit=document.getElementById('timerSplit');
+    const keypadSplit=document.getElementById('keypadSplit');
+    const backFromSplit=document.getElementById('backFromSplit');
+
+    const totalTimeEl=document.getElementById('totalTime');
+    const correctCountEl=document.getElementById('correctCount');
+    const avgTimeEl=document.getElementById('avgTime');
+    const mistakesEl=document.getElementById('mistakes');
+    const rankingList=document.getElementById('rankingList');
+    const rankInfo=document.getElementById('rankInfo');
+    const restartBtn=document.getElementById('restartBtn');
+
+    const soundCorrect=document.getElementById('soundCorrect');
+    const soundWrong=document.getElementById('soundWrong');
+
+    let state={};
+
+    function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+    function formatMs(ms){return (ms/1000).toFixed(2)+'초'}
+
+    // ---------- 덧셈 게임 ----------
+    function newAdditionProblem(){return {a:randInt(0,10),b:randInt(0,10)}}
+    function buildKeypadAdd(){
+      keypadAdd.innerHTML='';
+      for(let i=1;i<=20;i++){
+        const btn=document.createElement('button');
+        btn.textContent=i;
+        btn.addEventListener('click',()=>submitAddition(i));
+        keypadAdd.appendChild(btn);
+      }
+    }
+    function startAddition(){
+      state={mode:'addition',total:5,index:0,startTime:performance.now(),mistakes:0};
+      results.hidden=true;startScreen.hidden=true;additionScreen.hidden=false;splitScreen.hidden=true;
+      nextAddition();tick(timerAdd);
+    }
+    function nextAddition(){
+      state.current=newAdditionProblem();
+      qNumberAdd.textContent=`${state.index+1}번 문제`;
+      problemBoxAdd.textContent=`${state.current.a} + ${state.current.b} = ?`;
+      feedbackAdd.textContent='';
+      buildKeypadAdd();
+    }
+    function submitAddition(ans){
+      if(ans===(state.current.a+state.current.b)){
+        soundCorrect.play();
+        state.index++;
+        if(state.index>=state.total){finish()}else{nextAddition()}
+      }else{
+        soundWrong.play();
+        feedbackAdd.textContent='오답! 다시 시도';feedbackAdd.className='feedback bad';
+        state.mistakes++;
+      }
+    }
+
+    // ---------- 모으기/가르기 게임 ----------
+    // 덧셈: 최종 <=20, 뺄셈: 최종 1..10, 모든 빈칸 1..20
+    function newSplitProblem(){
+      for(let tries=0; tries<200; tries++){
+        const isAdd = Math.random()<0.5;
+        if(isAdd){
+          const a = randInt(11,19);            // 11..19
+          const b = randInt(1,20-a);           // 1..(20-a)
+          const rest=a-10;                      // 1..9
+          const s2=rest+b;                      // <=10
+          const s3=a+b;                         // <=20
+          if(s2>=1 && s2<=20 && s3<=20){
+            return {type:'add',a:a,b:b,solution:[rest,s2,s3]};
+          }
+        }else{
+          const a=randInt(11,18);              // 11..18 (y<=9 위해)
+          const rest=a-10;                      // 1..8
+          const b=randInt(rest+1,9);            // y>rest & y<=9
+          const s2=b-rest;                      // 1..8
+          const s3=a-b;                         // 1..9 (<=10 보장)
+          if(s2>=1 && s2<=20 && s3>=1 && s3<=10){
+            return {type:'sub',a:a,b:b,solution:[rest,s2,s3]};
+          }
+        }
+      }
+      return {type:'add',a:11,b:1,solution:[1,2,12]}; // fallback
+    }
+
+    function startSplit(){
+      state={mode:'split',total:3,index:0,startTime:performance.now(),mistakes:0,focus:0,answers:[null,null,null]};
+      results.hidden=true;startScreen.hidden=true;additionScreen.hidden=true;splitScreen.hidden=false;
+      nextSplit();tick(timerSplit);
+    }
+    function nextSplit(){
+      state.current=newSplitProblem();
+      state.focus=0;state.answers=[null,null,null];
+      qNumberSplit.textContent=`${state.index+1}번 문제`;
+      renderSplitProblem();
+      feedbackSplit.textContent='';
+      buildKeypadSplit();
+    }
+    function renderSplitProblem(){
+      const {type,a,b} = state.current;
+      if(type==='add'){
+        problemBoxSplit.innerHTML = `
+          <div style="font-size:28px;margin:8px 0">${a} + ${b}</div>
+          <div style="font-size:28px;margin:8px 0">= 10 + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> + ${b}</div>
+          <div style="font-size:28px;margin:8px 0">= 10 + <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span></div>
+        `;
+      }else{
+        problemBoxSplit.innerHTML = `
+          <div style="font-size:28px;margin:8px 0">${a} - ${b}</div>
+          <div style="font-size:28px;margin:8px 0">= 10 + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> - ${b}</div>
+          <div style="font-size:28px;margin:8px 0">= 10 - <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span></div>
+        `;
+      }
+    }
+    function buildKeypadSplit(){
+      keypadSplit.innerHTML='';
+      for(let i=1;i<=20;i++){
+        const btn=document.createElement('button');
+        btn.textContent=i;
+        btn.addEventListener('click',()=>submitSplitStep(i));
+        keypadSplit.appendChild(btn);
+      }
+    }
+    function submitSplitStep(val){
+      const idx=state.focus;
+      const target = state.current.solution[idx];
+      if(val===target){
+        soundCorrect.play();
+        state.answers[idx]=val;
+        state.focus++;
+        if(state.focus>=3){
+          state.index++;
+          if(state.index>=state.total){finish()}else{nextSplit()}
+        }else{
+          renderSplitProblem();
+        }
+      }else{
+        soundWrong.play();
+        feedbackSplit.textContent='오답! 다시 시도';feedbackSplit.className='feedback bad';
+        state.mistakes++;
+        state.answers=[null,null,null];
+        state.focus=0;
+        renderSplitProblem();
+      }
+    }
+
+    // ---------- 공통 ----------
+    function tick(timerEl){
+      function step(){
+        const ms=performance.now()-state.startTime;
+        timerEl.textContent=(ms/1000).toFixed(2)+'초';
+        state.timerId=requestAnimationFrame(step);
+      }
+      cancelAnimationFrame(state.timerId);
+      state.timerId=requestAnimationFrame(step);
+    }
+    function finish(){
+      cancelAnimationFrame(state.timerId);
+      const totalMs=performance.now()-state.startTime;
+      totalTimeEl.textContent=formatMs(totalMs);
+      correctCountEl.textContent=state.total;
+      avgTimeEl.textContent=(totalMs/1000/state.total).toFixed(2)+'초';
+      mistakesEl.textContent=state.mistakes;
+      saveRanking(totalMs);
+      additionScreen.hidden=true;splitScreen.hidden=true;results.hidden=false;
+    }
+
+    function saveRanking(totalMs){
+      const name=getPlayerName();
+      const record={name,score:state.total,time:totalMs,mode:state.mode};
+      let ranking=JSON.parse(localStorage.getItem('ranking')||'[]');
+      ranking.push(record);
+      ranking.sort((a,b)=>b.score-a.score||a.time-b.time);
+      ranking=ranking.slice(0,20);
+      localStorage.setItem('ranking',JSON.stringify(ranking));
+      renderRanking(ranking,record);
     }
 
     function renderRanking(ranking,record){
-      const rankingList=document.getElementById('rankingList');
-      const rankInfo=document.getElementById('rankInfo');
       rankingList.innerHTML='';
       let myRank=null;
       ranking.forEach((r,i)=>{
@@ -168,17 +327,19 @@
         else if(i===1) medal='🥈 ';
         else if(i===2) medal='🥉 ';
         else medal='⭐ ';
-        li.textContent=`${medal}${i+1}위: ${r.name} (${r.mode==='addition'?'덧셈':'모으기/가르기'}) 점수:${r.score}, 시간:${(r.time/1000).toFixed(2)}초`;
+        li.textContent=`\${medal}\${i+1}위: \${r.name} (\${r.mode==='addition'?'덧셈':'모으기/가르기'}) 점수:\${r.score}, 시간:\${(r.time/1000).toFixed(2)}초`;
         rankingList.appendChild(li);
         if(r===record) myRank=i+1;
       });
-      rankInfo.textContent=myRank?`현재 기록은 ${myRank}위 입니다.`:'';
+      rankInfo.textContent=myRank?`현재 기록은 \${myRank}위 입니다.`:'';
     }
 
-    // ⚠️ 이 아래에는 이전 덧셈/모으기/가르기 게임 로직 동일하게 두시면 됩니다.
-    // saveRanking 함수에서 const name=getPlayerName(); 으로 불러오도록만 수정하세요.
+    // --- 이벤트 바인딩 ---
+    additionSelect.addEventListener('click',startAddition);
+    splitSelect.addEventListener('click',startSplit);
+    backFromAdd.addEventListener('click',()=>{additionScreen.hidden=true;startScreen.hidden=false});
+    backFromSplit.addEventListener('click',()=>{splitScreen.hidden=true;startScreen.hidden=false});
+    restartBtn.addEventListener('click',()=>{results.hidden=true;startScreen.hidden=false});
   </script>
 </body>
 </html>
-
-

@@ -88,7 +88,7 @@
         <button class="char-btn" data-name="수박이">수박이</button>
       </div>
       <div style="margin:12px 0;">또는 직접 입력:</div>
-      <input id="playerName" placeholder="이름 입력 (없으면 캐릭터/무명)" />
+      <input id="playerName" placeholder="이름 입력 (없으면 캐릭터/메롱)" />
       <div class="center-btn">
         <button id="additionSelect" class="start-big">1. 덧셈 게임</button>
         <button id="splitSelect" class="start-big">2. 모으기와 가르기</button>
@@ -153,7 +153,7 @@
       const manual = document.getElementById('playerName').value.trim();
       if(manual) return manual;
       if(selectedChar) return selectedChar;
-      return '무명';
+      return '메롱';
     }
 
     function renderRanking(ranking,record){
@@ -180,4 +180,5 @@
   </script>
 </body>
 </html>
+
 

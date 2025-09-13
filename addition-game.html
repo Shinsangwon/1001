@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>덧셈 타이머 게임 (10이하)</title>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,Apple SD Gothic Neo,sans-serif;background:#f6f7fb;color:#222}
+    .wrap{max-width:600px;margin:0 auto;padding:16px}
+    h1{font-size:20px}
+    .card{background:#fff;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.08);padding:16px;margin-bottom:12px}
+    .problem{font-size:40px;font-weight:bold;text-align:center;margin:20px 0}
+    .answerRow{display:flex;gap:8px;justify-content:center}
+    input{padding:10px;font-size:24px;width:100px;text-align:center}
+    button{padding:10px 14px;font-size:16px;border:none;border-radius:8px;cursor:pointer}
+    #timer{font-weight:bold}
+    .feedback{text-align:center;margin-top:10px;height:24px;font-weight:bold}
+    .ok{color:green}.bad{color:red}
+    .results{margin-top:20px}
+    .ranking{margin-top:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>덧셈 타이머 게임 (10이하)</h1>
+    <div class="card">
+      <label>이름(선택): <input id="playerName" placeholder="이름 없으면 '무명'" /></label>
+      <div style="margin-top:8px">
+        <button id="startBtn">시작</button>
+        <span id="timer">0.00초</span>
+      </div>
+    </div>
+    <div class="card">
+      <div id="problemBox" class="problem">시작을 누르세요</div>
+      <div class="answerRow">
+        <input id="answer" type="number" disabled />
+        <button id="submitBtn" disabled>확인</button>
+      </div>
+      <div id="feedback" class="feedback"></div>
+    </div>
+    <div id="results" class="card results" hidden>
+      <h2>결과</h2>
+      <div>총 소요시간: <span id="totalTime"></span></div>
+      <div>정답 개수: <span id="correctCount"></span></div>
+      <div>평균 시간/문제: <span id="avgTime"></span></div>
+      <div>오답 시도: <span id="mistakes"></span></div>
+      <div class="ranking">
+        <h3>순위</h3>
+        <div id="rankInfo"></div>
+        <ol id="rankingList"></ol>
+      </div>
+    </div>
+  </div>
+  <audio id="soundCorrect" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+  <audio id="soundWrong" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+  <script>
+    const startBtn=document.getElementById('startBtn');
+    const problemBox=document.getElementById('problemBox');
+    const answerEl=document.getElementById('answer');
+    const submitBtn=document.getElementById('submitBtn');
+    const feedbackEl=document.getElementById('feedback');
+    const timerEl=document.getElementById('timer');
+    const results=document.getElementById('results');
+    const totalTimeEl=document.getElementById('totalTime');
+    const correctCountEl=document.getElementById('correctCount');
+    const avgTimeEl=document.getElementById('avgTime');
+    const mistakesEl=document.getElementById('mistakes');
+    const rankingList=document.getElementById('rankingList');
+    const rankInfo=document.getElementById('rankInfo');
+    const playerNameEl=document.getElementById('playerName');
+    const soundCorrect=document.getElementById('soundCorrect');
+    const soundWrong=document.getElementById('soundWrong');
+
+    let state={};
+
+    function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+    function newProblem(){return {a:randInt(0,10),b:randInt(0,10)}}
+    function formatMs(ms){return (ms/1000).toFixed(2)+'초'}
+
+    function start(){
+      state={total:10,index:0,startTime:performance.now(),mistakes:0,problems:[],current:null};
+      results.hidden=true;
+      startBtn.disabled=true;
+      answerEl.disabled=false;submitBtn.disabled=false;
+      nextProblem();
+      tick();
+    }
+
+    function tick(){
+      function step(){
+        const ms=performance.now()-state.startTime;
+        timerEl.textContent=(ms/1000).toFixed(2)+'초';
+        state.timerId=requestAnimationFrame(step);
+      }
+      cancelAnimationFrame(state.timerId);
+      state.timerId=requestAnimationFrame(step);
+    }
+
+    function nextProblem(){
+      state.current=newProblem();
+      problemBox.textContent=`${state.current.a} + ${state.current.b} = ?`;
+      answerEl.value='';answerEl.focus();feedbackEl.textContent='';
+    }
+
+    function submit(){
+      const ans=Number(answerEl.value);
+      if(ans===(state.current.a+state.current.b)){
+        soundCorrect.play();
+        state.index++;
+        if(state.index>=state.total){finish()}else{nextProblem()}
+      }else{
+        soundWrong.play();
+        feedbackEl.textContent='오답! 다시 시도';feedbackEl.className='feedback bad';
+        state.mistakes++;
+        answerEl.value='';answerEl.focus();
+      }
+    }
+
+    function finish(){
+      cancelAnimationFrame(state.timerId);
+      const totalMs=performance.now()-state.startTime;
+      answerEl.disabled=true;submitBtn.disabled=true;startBtn.disabled=false;
+      totalTimeEl.textContent=formatMs(totalMs);
+      correctCountEl.textContent=state.total;
+      avgTimeEl.textContent=(totalMs/1000/state.total).toFixed(2)+'초';
+      mistakesEl.textContent=state.mistakes;
+      saveRanking(totalMs);
+      results.hidden=false;
+    }
+
+    function saveRanking(totalMs){
+      const name=playerNameEl.value.trim()||'무명';
+      const record={name,score:state.total,time:totalMs};
+      let ranking=JSON.parse(localStorage.getItem('ranking')||'[]');
+      ranking.push(record);
+      ranking.sort((a,b)=>b.score-a.score||a.time-b.time);
+      ranking=ranking.slice(0,20);
+      localStorage.setItem('ranking',JSON.stringify(ranking));
+      renderRanking(ranking,record);
+    }
+
+    function renderRanking(ranking,record){
+      rankingList.innerHTML='';
+      let myRank=null;
+      ranking.forEach((r,i)=>{
+        const li=document.createElement('li');
+        li.textContent=`${r.name} - 점수:${r.score}, 시간:${(r.time/1000).toFixed(2)}초`;
+        rankingList.appendChild(li);
+        if(r===record)myRank=i+1;
+      });
+      rankInfo.textContent=myRank?`현재 기록은 ${myRank}위 입니다.`:'';
+    }
+
+    startBtn.addEventListener('click',start);
+    submitBtn.addEventListener('click',submit);
+    answerEl.addEventListener('keydown',e=>{if(e.key==='Enter')submit()});
+  </script>
+</body>
+</html>

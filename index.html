@@ -45,7 +45,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>신준열규열 수학게임</h1>
+    <h1>게임 선택</h1>
     <div class="desc">
       <p>1. 덧셈(5문제) · 2. 뺄셈(5문제) · 3. 모으기/가르기(3문제) · 4. 구구단(5문제, 단 선택) · 5. 나눗셈(5문제)</p>
     </div>
@@ -265,7 +265,30 @@
     function startSplit(){ state={mode:'split',total:3,index:0,startTime:performance.now(),mistakes:0,focus:0,answers:[null,null,null],seen:new Set()}; showOnly('split'); nextSplit(); tick(timerSplit);}    
     function nextSplit(){ state.current=newSplitProblem(); state.focus=0; state.answers=[null,null,null]; qNumberSplit.textContent=`${state.index+1}번 문제`; renderSplitProblem(); feedbackSplit.textContent=''; buildKeypad(keypadSplit,submitSplitStep);}    
     function renderSplitProblem(){ const {type,a,b,p}=state.current; if(type==='add'){ problemBoxSplit.innerHTML=`<div style="font-size:28px;margin:8px 0">${a} + ${b}</div><div style="font-size:28px;margin:8px 0">= ${p} + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> + ${b}</div><div style="font-size:28px;margin:8px 0">= ${p} + <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span></div>`;} else { problemBoxSplit.innerHTML=`<div style="font-size:28px;margin:8px 0">${a} - ${b}</div><div style="font-size:28px;margin:8px 0">= ${p} + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> - ${b}</div><div style="font-size:28px;margin:8px 0">= ${p} - <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span></div>`; } }
-    function submitSplitStep(val){ const idx=state.focus; const target=state.current.solution[idx]; if(val===target){ soundCorrect.play(); state.answers[idx]=val; state.focus++; if(state.focus>=3){ state.index++; if(state.index>=state.total) finish(); else nextSplit(); } else { renderSplitProblem(); } } else { soundWrong.play(); feedbackSplit.textContent='오답! 다시 시도'; feedbackSplit.className='feedback bad'; state.mistakes++; state.answers=[null,null,null]; state.focus=0; renderSplitProblem(); } }
+    function submitSplitStep(val){
+      const idx=state.focus;
+      const target = state.current.solution[idx];
+      if(val===target){
+        soundCorrect.play();
+        state.answers[idx]=val;
+        state.focus++;
+        if(state.focus>=3){
+          state.index++;
+          if(state.index>=state.total){finish()}else{nextSplit()}
+        }else{
+          feedbackSplit.textContent='';
+          renderSplitProblem();
+        }
+      }else{
+        soundWrong.play();
+        feedbackSplit.textContent='오답! 현재 칸을 다시 시도하세요';
+        feedbackSplit.className='feedback bad';
+        state.mistakes++;
+        // 이전까지 맞춘 칸은 유지, 현재 칸만 다시 입력
+        // focus와 answers는 그대로 둠
+        renderSplitProblem();
+      }
+    } else { renderSplitProblem(); } } else { soundWrong.play(); feedbackSplit.textContent='오답! 다시 시도'; feedbackSplit.className='feedback bad'; state.mistakes++; state.answers=[null,null,null]; state.focus=0; renderSplitProblem(); } }
 
     // ===== 4. 구구단 (단 선택 + 숫자패드, 세트 시작 시 타이머 시작, 중복 없음) =====
     const danChips=$('danChips'), danAll=$('danAll'), danClear=$('danClear'), guguStart=$('guguStart');
@@ -311,4 +334,3 @@
   </script>
 </body>
 </html>
-

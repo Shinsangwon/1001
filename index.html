@@ -5,40 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>덧셈 타이머 게임 (10이하)</title>
   <style>
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,Apple SD Gothic Neo,sans-serif;background:#f6f7fb;color:#222}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,Apple SD Gothic Neo,sans-serif;background:#ffe4ec;color:#222}
     .wrap{max-width:600px;margin:0 auto;padding:16px}
-    h1{font-size:20px}
-    .card{background:#fff;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.08);padding:16px;margin-bottom:12px}
-    .problem{font-size:40px;font-weight:bold;text-align:center;margin:20px 0}
-    .answerRow{display:flex;gap:8px;justify-content:center}
-    input{padding:10px;font-size:24px;width:100px;text-align:center}
-    button{padding:10px 14px;font-size:16px;border:none;border-radius:8px;cursor:pointer}
-    #timer{font-weight:bold}
-    .feedback{text-align:center;margin-top:10px;height:24px;font-weight:bold}
+    h1{text-align:center;font-size:24px;margin:12px 0}
+    .card{background:#fff;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.12);padding:20px;margin-bottom:16px}
+    .problem-box{border:3px solid #ff6fa0;border-radius:12px;padding:20px;text-align:center;background:#fff0f5;}
+    .problem{font-size:36px;font-weight:bold;margin:10px 0}
+    .question-number{font-size:16px;color:#555;margin-bottom:8px}
+    .keypad{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:16px}
+    .keypad button{padding:14px;font-size:18px;border:none;border-radius:8px;background:#ffb6c1;cursor:pointer;transition:.2s}
+    .keypad button:hover{background:#ff91af}
+    .feedback{text-align:center;margin-top:12px;height:24px;font-weight:bold}
     .ok{color:green}.bad{color:red}
-    .results{margin-top:20px}
-    .ranking{margin-top:12px}
+    #timer{font-weight:bold;font-size:18px}
+    .results h2{text-align:center;margin:0 0 8px}
+    .results{padding:20px;text-align:center}
+    .ranking ol{padding-left:20px;text-align:left}
+    .finish-message{font-size:20px;color:#ff4081;font-weight:bold;margin-bottom:12px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>덧셈 타이머 게임 (10이하)</h1>
     <div class="card">
-      <label>이름(선택): <input id="playerName" placeholder="이름 없으면 '무명'" /></label>
-      <div style="margin-top:8px">
+      <label>이름(선택): <input id="playerName" placeholder="이름 없으면 '바보'" /></label>
+      <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
         <button id="startBtn">시작</button>
         <span id="timer">0.00초</span>
       </div>
     </div>
-    <div class="card">
+    <div class="card problem-box">
+      <div class="question-number" id="qNumber">문제 번호</div>
       <div id="problemBox" class="problem">시작을 누르세요</div>
-      <div class="answerRow">
-        <input id="answer" type="number" disabled />
-        <button id="submitBtn" disabled>확인</button>
-      </div>
+      <div class="keypad" id="keypad"></div>
       <div id="feedback" class="feedback"></div>
     </div>
     <div id="results" class="card results" hidden>
+      <div class="finish-message">수고했어요!</div>
       <h2>결과</h2>
       <div>총 소요시간: <span id="totalTime"></span></div>
       <div>정답 개수: <span id="correctCount"></span></div>
@@ -56,8 +59,6 @@
   <script>
     const startBtn=document.getElementById('startBtn');
     const problemBox=document.getElementById('problemBox');
-    const answerEl=document.getElementById('answer');
-    const submitBtn=document.getElementById('submitBtn');
     const feedbackEl=document.getElementById('feedback');
     const timerEl=document.getElementById('timer');
     const results=document.getElementById('results');
@@ -70,6 +71,8 @@
     const playerNameEl=document.getElementById('playerName');
     const soundCorrect=document.getElementById('soundCorrect');
     const soundWrong=document.getElementById('soundWrong');
+    const qNumber=document.getElementById('qNumber');
+    const keypad=document.getElementById('keypad');
 
     let state={};
 
@@ -77,11 +80,20 @@
     function newProblem(){return {a:randInt(0,10),b:randInt(0,10)}}
     function formatMs(ms){return (ms/1000).toFixed(2)+'초'}
 
+    function buildKeypad(){
+      keypad.innerHTML='';
+      for(let i=1;i<=20;i++){
+        const btn=document.createElement('button');
+        btn.textContent=i;
+        btn.addEventListener('click',()=>submit(i));
+        keypad.appendChild(btn);
+      }
+    }
+
     function start(){
-      state={total:10,index:0,startTime:performance.now(),mistakes:0,problems:[],current:null};
+      state={total:10,index:0,startTime:performance.now(),mistakes:0};
       results.hidden=true;
       startBtn.disabled=true;
-      answerEl.disabled=false;submitBtn.disabled=false;
       nextProblem();
       tick();
     }
@@ -98,12 +110,13 @@
 
     function nextProblem(){
       state.current=newProblem();
+      qNumber.textContent=`${state.index+1}번 문제`;
       problemBox.textContent=`${state.current.a} + ${state.current.b} = ?`;
-      answerEl.value='';answerEl.focus();feedbackEl.textContent='';
+      feedbackEl.textContent='';
+      buildKeypad();
     }
 
-    function submit(){
-      const ans=Number(answerEl.value);
+    function submit(ans){
       if(ans===(state.current.a+state.current.b)){
         soundCorrect.play();
         state.index++;
@@ -112,14 +125,13 @@
         soundWrong.play();
         feedbackEl.textContent='오답! 다시 시도';feedbackEl.className='feedback bad';
         state.mistakes++;
-        answerEl.value='';answerEl.focus();
       }
     }
 
     function finish(){
       cancelAnimationFrame(state.timerId);
       const totalMs=performance.now()-state.startTime;
-      answerEl.disabled=true;submitBtn.disabled=true;startBtn.disabled=false;
+      startBtn.disabled=false;
       totalTimeEl.textContent=formatMs(totalMs);
       correctCountEl.textContent=state.total;
       avgTimeEl.textContent=(totalMs/1000/state.total).toFixed(2)+'초';
@@ -144,7 +156,7 @@
       let myRank=null;
       ranking.forEach((r,i)=>{
         const li=document.createElement('li');
-        li.textContent=`${r.name} - 점수:${r.score}, 시간:${(r.time/1000).toFixed(2)}초`;
+        li.textContent=`${i+1}위: ${r.name} - 점수:${r.score}, 시간:${(r.time/1000).toFixed(2)}초`;
         rankingList.appendChild(li);
         if(r===record)myRank=i+1;
       });
@@ -152,8 +164,6 @@
     }
 
     startBtn.addEventListener('click',start);
-    submitBtn.addEventListener('click',submit);
-    answerEl.addEventListener('keydown',e=>{if(e.key==='Enter')submit()});
   </script>
 </body>
 </html>

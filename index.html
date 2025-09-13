@@ -11,7 +11,7 @@
     .desc{font-size:15px;color:#555;text-align:center;margin-bottom:16px}
     .card{background:#fff;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.12);padding:20px;margin-bottom:16px}
     .problem-box{border:3px solid #ff6fa0;border-radius:12px;padding:20px;text-align:center;background:#fff0f5;}
-    .problem{font-size:24px;font-weight:bold;margin:10px 0;line-height:1.6}
+    .problem{font-size:24px;font-weight:bold;margin:10px 0;line-height:1.8}
     .question-number{font-size:16px;color:#555;margin-bottom:8px}
     .keypad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px}
     .keypad button{padding:14px;font-size:18px;border:none;border-radius:8px;background:#ffb6c1;cursor:pointer;transition:.2s}
@@ -26,8 +26,8 @@
     .center-btn{display:flex;justify-content:center;margin-top:20px;gap:10px;flex-wrap:wrap}
     .start-big{padding:20px 40px;font-size:22px;border:none;border-radius:12px;background:#ff4081;color:#fff;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.2);transition:.2s}
     .start-big:hover{background:#e73370}
-    .blank{display:inline-block;min-width:40px;border-bottom:2px solid #ff4081;margin:0 4px;padding:2px;font-size:22px;color:#111}
-    .blank.active{background:#ffe4ec;border-bottom:3px solid #ff4081}
+    .blank{display:inline-block;min-width:40px;border-bottom:2px solid #ff4081;margin:0 4px;padding:2px 6px;font-size:22px;color:#111;border-radius:6px}
+    .blank.active{background:#ffd6e6;border-bottom:3px solid #ff4081;box-shadow:0 0 0 3px rgba(255,64,129,.15)}
   </style>
 </head>
 <body>
@@ -35,7 +35,7 @@
     <h1>게임 선택</h1>
     <div class="desc">
       <p><b>덧셈 게임</b>: 1~20 버튼으로 정답을 입력하여 빠르게 푸는 게임 (5문제 세트)</p>
-      <p><b>모으기와 가르기</b>: 수식을 단계별로 완성하는 게임. 버튼으로 빈칸을 차례대로 맞혀야 합니다 (3문제 세트)</p>
+      <p><b>모으기와 가르기</b>: 10을 기준으로 식을 단계별로 완성합니다. 버튼으로 빈칸 3개를 <b>순서대로</b> 맞혀야 합니다 (3문제 세트)</p>
     </div>
     <div id="startScreen" class="card">
       <label>이름(선택): <input id="playerName" placeholder="이름 없으면 '무명'" /></label>
@@ -166,13 +166,37 @@
     }
 
     // ---------- 모으기/가르기 게임 ----------
+    // 문제는 항상 빈칸 3개, 해답은 모두 1~20의 양의 정수로 제한되도록 생성
     function newSplitProblem(){
-      let a=randInt(11,20);let b=randInt(1,9);
-      if(Math.random()<0.5){ // 덧셈형
-        return {type:'add',a:a,b:b};
-      }else{
-        return {type:'sub',a:a,b:b};
+      // 무한루프 방지용 시도 제한
+      for(let tries=0; tries<100; tries++){
+        const isAdd = Math.random()<0.5; // 덧셈형/뺄셈형 랜덤
+        if(isAdd){
+          // 덧셈형: x+y <= 20, x in [11..19], y in [1..(20-x)]
+          const x = randInt(11,19);
+          const y = randInt(1,20-x);
+          const rest = x-10; // 1..9
+          const s2 = rest + y; // <=10
+          const s3 = x + y; // <=20
+          if(s2>=1 && s2<=20 && s3>=1 && s3<=20){
+            return {type:'add',a:x,b:y,solution:[rest,s2,s3]};
+          }
+        }else{
+          // 뺄셈형: 두번째 빈칸 y-rest가 양수가 되도록 y>rest, x in [11..18]
+          const x = randInt(11,18);
+          const rest = x - 10; // 1..8
+          const y = randInt(rest+1, Math.min(9, x-1)); // 보장: y>rest, y<=9, y<x
+          if(y && y>rest){
+            const s2 = y - rest; // 1..9
+            const s3 = x - y; // 최소 1, 최대 17
+            if(s2>=1 && s2<=20 && s3>=1 && s3<=20){
+              return {type:'sub',a:x,b:y,solution:[rest,s2,s3]};
+            }
+          }
+        }
       }
+      // 폴백(이론상 도달하지 않음)
+      return {type:'add',a:11,b:1,solution:[1,2,12]};
     }
 
     function startSplit(){
@@ -191,14 +215,13 @@
     }
 
     function renderSplitProblem(){
-      if(state.current.type==='add'){
-        let x=state.current.a;let y=state.current.b;let rest=x-10;
-        state.solution=[rest,y+rest,x+y];
-        problemBoxSplit.innerHTML=`${x} + ${y} = 10 + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> + ${y} = 10 + <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span>`;
+      const {type,a,b} = state.current;
+      // 표시: 12 + 5 = 10 + (  ) + 5 = 10 + (  ) = (  )
+      //     17 - 8 = 10 + (  ) - 8 = 10 - (  ) = (  )
+      if(type==='add'){
+        problemBoxSplit.innerHTML = `${a} + ${b} = 10 + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> + ${b} = 10 + <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span>`;
       }else{
-        let x=state.current.a;let y=state.current.b;let rest=x-10;
-        state.solution=[rest,y,10-rest-y];
-        problemBoxSplit.innerHTML=`${x} - ${y} = 10 + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> - ${y} = 10 - <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span>`;
+        problemBoxSplit.innerHTML = `${a} - ${b} = 10 + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> - ${b} = 10 - <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span>`;
       }
     }
 
@@ -213,8 +236,9 @@
     }
 
     function submitSplitStep(val){
-      let idx=state.focus;
-      if(val===state.solution[idx]){
+      const idx=state.focus;
+      const target = state.current.solution[idx];
+      if(val===target){
         soundCorrect.play();
         state.answers[idx]=val;
         state.focus++;
@@ -228,6 +252,7 @@
         soundWrong.play();
         feedbackSplit.textContent='오답! 다시 시도';feedbackSplit.className='feedback bad';
         state.mistakes++;
+        // 처음부터 다시 입력하도록 초기화
         state.answers=[null,null,null];
         state.focus=0;
         renderSplitProblem();
@@ -286,4 +311,5 @@
     backFromSplit.addEventListener('click',()=>{splitScreen.hidden=true;startScreen.hidden=false});
     restartBtn.addEventListener('click',()=>{results.hidden=true;startScreen.hidden=false});
   </script>
-</b
+</body>
+</html>

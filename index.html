@@ -49,16 +49,16 @@
     <div id="startScreen" class="card">
       <div style="margin-bottom:12px;">캐릭터 선택:</div>
       <div>
-        <button class="char-btn" data-name="신준열">신준열</button>
-        <button class="char-btn" data-name="신규열">신규열</button>
-        <button class="char-btn" data-name="파닥이">파닥이</button>
-        <button class="char-btn" data-name="수박이">수박이</button>
+        <button type="button" class="char-btn" data-name="신준열">신준열</button>
+        <button type="button" class="char-btn" data-name="신규열">신규열</button>
+        <button type="button" class="char-btn" data-name="파닥이">파닥이</button>
+        <button type="button" class="char-btn" data-name="수박이">수박이</button>
       </div>
       <div style="margin:12px 0;">또는 직접 입력:</div>
       <input id="playerName" placeholder="이름 입력 (없으면 캐릭터/무명)" />
       <div class="center-btn">
-        <button id="additionSelect" class="start-big">1. 덧셈 게임</button>
-        <button id="splitSelect" class="start-big">2. 모으기와 가르기</button>
+        <button type="button" id="additionSelect" class="start-big">1. 덧셈 게임</button>
+        <button type="button" id="splitSelect" class="start-big">2. 모으기와 가르기</button>
       </div>
     </div>
 
@@ -69,7 +69,7 @@
       <div id="keypadAdd" class="keypad"></div>
       <div id="feedbackAdd" class="feedback"></div>
       <div style="margin-top:12px;text-align:center"><span id="timerAdd">0.00초</span></div>
-      <div class="center-btn"><button id="backFromAdd" class="start-big">게임선택으로</button></div>
+      <div class="center-btn"><button type="button" id="backFromAdd" class="start-big">게임선택으로</button></div>
     </div>
 
     <!-- 모으기/가르기 게임 화면 -->
@@ -79,7 +79,7 @@
       <div id="keypadSplit" class="keypad"></div>
       <div id="feedbackSplit" class="feedback"></div>
       <div style="margin-top:12px;text-align:center"><span id="timerSplit">0.00초</span></div>
-      <div class="center-btn"><button id="backFromSplit" class="start-big">게임선택으로</button></div>
+      <div class="center-btn"><button type="button" id="backFromSplit" class="start-big">게임선택으로</button></div>
     </div>
 
     <!-- 결과 화면 공통 -->
@@ -96,7 +96,7 @@
         <ol id="rankingList"></ol>
       </div>
       <div class="center-btn">
-        <button id="restartBtn" class="start-big">게임선택으로</button>
+        <button type="button" id="restartBtn" class="start-big">게임선택으로</button>
       </div>
     </div>
   </div>
@@ -105,6 +105,7 @@
   <audio id="soundWrong" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
 
   <script>
+  document.addEventListener('DOMContentLoaded',function(){
     // --- 캐릭터 선택/수동 입력 ---
     const charButtons = document.querySelectorAll('.char-btn');
     let selectedChar = '';
@@ -163,11 +164,20 @@
     function formatMs(ms){return (ms/1000).toFixed(2)+'초'}
 
     // ---------- 덧셈 게임 ----------
-    function newAdditionProblem(){return {a:randInt(0,10),b:randInt(0,10)}}
+    function newAdditionProblem(){
+      // 정답 1~20 보장 (0 제거)
+      for(let i=0;i<100;i++){
+        const a=randInt(0,10), b=randInt(0,10);
+        const s=a+b;
+        if(s>=1 && s<=20) return {a,b};
+      }
+      return {a:1,b:1};
+    }
     function buildKeypadAdd(){
       keypadAdd.innerHTML='';
       for(let i=1;i<=20;i++){
         const btn=document.createElement('button');
+        btn.type='button';
         btn.textContent=i;
         btn.addEventListener('click',()=>submitAddition(i));
         keypadAdd.appendChild(btn);
@@ -198,7 +208,6 @@
     }
 
     // ---------- 모으기/가르기 게임 (가변 기준 p) ----------
-    // 덧셈: 최종 <=20, 뺄셈: 최종 1..10, 모든 빈칸 1..20
     function newSplitProblem(){
       for(let tries=0; tries<200; tries++){
         const isAdd = Math.random()<0.5;
@@ -207,13 +216,153 @@
           const b = randInt(1,20-a);               // 1..(20-a) → a+b ≤ 20
           const p = randInt(1,a-1);                // 1..a-1
           const s1 = a - p;                         // ≥1
-          const s2 = s1 + b;                        // ≤ (a-1)+b ≤ 19
+          const s2 = s1 + b;                        // ≤ 20
           const s3 = a + b;                         // ≤20
           if(s1>=1 && s1<=20 && s2>=1 && s2<=20 && s3<=20){
             return {type:'add',a:a,b:b,p:p,solution:[s1,s2,s3]};
           }
         }else{
-          const a = randInt(3,20);                 // 최소 3 (p 선택 여유)
-          const r = randInt(1, Math.min(10, a-2)); // 최종결과 1..10, p범위 확보 위해 r≤a-2
+          const a = randInt(3,20);                 // 최소 3
+          const r = randInt(1, Math.min(10, a-2)); // 최종결과 1..10
           const b = a - r;                          // 1..19
-          const pMin = r + 1;
+          const pMin = r + 1;                       // p > a-b(=r)
+          const pMax = a - 1;
+          if(pMin<=pMax){
+            const p = randInt(pMin, pMax);
+            const s1 = a - p;                       // ≥1
+            const s2 = b - s1;                      // = p - r ≥1
+            const s3 = r;                           // 1..10
+            if(s1>=1 && s1<=20 && s2>=1 && s2<=20 && s3>=1 && s3<=10){
+              return {type:'sub',a:a,b:b,p:p,solution:[s1,s2,s3]};
+            }
+          }
+        }
+      }
+      return {type:'add',a:11,b:1,p:10,solution:[1,2,12]};
+    }
+
+    function buildKeypadSplit(){
+      keypadSplit.innerHTML='';
+      for(let i=1;i<=20;i++){
+        const btn=document.createElement('button');
+        btn.type='button';
+        btn.textContent=i;
+        btn.addEventListener('click',()=>submitSplitStep(i));
+        keypadSplit.appendChild(btn);
+      }
+    }
+    function startSplit(){
+      state={mode:'split',total:3,index:0,startTime:performance.now(),mistakes:0,focus:0,answers:[null,null,null]};
+      results.hidden=true;startScreen.hidden=true;additionScreen.hidden=true;splitScreen.hidden=false;
+      nextSplit();tick(timerSplit);
+    }
+    function nextSplit(){
+      state.current=newSplitProblem();
+      state.focus=0;state.answers=[null,null,null];
+      qNumberSplit.textContent=`${state.index+1}번 문제`;
+      renderSplitProblem();
+      feedbackSplit.textContent='';
+      buildKeypadSplit();
+    }
+    function renderSplitProblem(){
+      const {type,a,b,p} = state.current;
+      if(type==='add'){
+        problemBoxSplit.innerHTML = `
+          <div style="font-size:28px;margin:8px 0">${a} + ${b}</div>
+          <div style="font-size:28px;margin:8px 0">= ${p} + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> + ${b}</div>
+          <div style="font-size:28px;margin:8px 0">= ${p} + <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span></div>
+        `;
+      }else{
+        problemBoxSplit.innerHTML = `
+          <div style="font-size:28px;margin:8px 0">${a} - ${b}</div>
+          <div style="font-size:28px;margin:8px 0">= ${p} + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> - ${b}</div>
+          <div style="font-size:28px;margin:8px 0">= ${p} - <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span></div>
+        `;
+      }
+    }
+    function submitSplitStep(val){
+      const idx=state.focus;
+      const target = state.current.solution[idx];
+      if(val===target){
+        soundCorrect.play();
+        state.answers[idx]=val;
+        state.focus++;
+        if(state.focus>=3){
+          state.index++;
+          if(state.index>=state.total){finish()}else{nextSplit()}
+        }else{
+          renderSplitProblem();
+        }
+      }else{
+        soundWrong.play();
+        feedbackSplit.textContent='오답! 다시 시도';feedbackSplit.className='feedback bad';
+        state.mistakes++;
+        state.answers=[null,null,null];
+        state.focus=0;
+        renderSplitProblem();
+      }
+    }
+
+    // ---------- 공통 ----------
+    function tick(timerEl){
+      function step(){
+        const ms=performance.now()-state.startTime;
+        timerEl.textContent=(ms/1000).toFixed(2)+'초';
+        state.timerId=requestAnimationFrame(step);
+      }
+      cancelAnimationFrame(state.timerId);
+      state.timerId=requestAnimationFrame(step);
+    }
+
+    // 모드별 랭킹 저장/표시 (분리 저장)
+    function saveRanking(totalMs){
+      const name=getPlayerName();
+      const record={name,score:state.total,time:totalMs,mode:state.mode};
+      const key = state.mode==='addition' ? 'ranking_addition' : 'ranking_split';
+      let ranking=JSON.parse(localStorage.getItem(key)||'[]');
+      ranking.push(record);
+      ranking.sort((a,b)=> b.score-a.score || a.time-b.time);
+      ranking=ranking.slice(0,20);
+      localStorage.setItem(key,JSON.stringify(ranking));
+      renderRanking(ranking,record);
+      rankingTitle.textContent = state.mode==='addition' ? '🏆 순위표 (덧셈) 🏆' : '🏆 순위표 (모으기/가르기) 🏆';
+    }
+
+    function renderRanking(ranking,record){
+      rankingList.innerHTML='';
+      let myRank=null;
+      ranking.forEach((r,i)=>{
+        const li=document.createElement('li');
+        let medal='';
+        if(i===0) medal='🥇 ';
+        else if(i===1) medal='🥈 ';
+        else if(i===2) medal='🥉 ';
+        else medal='⭐ ';
+        li.textContent=`${medal}${i+1}위: ${r.name} (점수:${r.score}, 시간:${(r.time/1000).toFixed(2)}초)`;
+        rankingList.appendChild(li);
+        if(r===record) myRank=i+1;
+      });
+      rankInfo.textContent=myRank?`현재 기록은 ${myRank}위 입니다.`:'';
+    }
+
+    function finish(){
+      cancelAnimationFrame(state.timerId);
+      const totalMs=performance.now()-state.startTime;
+      totalTimeEl.textContent=formatMs(totalMs);
+      correctCountEl.textContent=state.total;
+      avgTimeEl.textContent=(totalMs/1000/state.total).toFixed(2)+'초';
+      mistakesEl.textContent=state.mistakes;
+      additionScreen.hidden=true;splitScreen.hidden=true;results.hidden=false;
+      saveRanking(totalMs);
+    }
+
+    // --- 이벤트 바인딩 ---
+    additionSelect.addEventListener('click',startAddition);
+    splitSelect.addEventListener('click',startSplit);
+    backFromAdd.addEventListener('click',()=>{additionScreen.hidden=true;startScreen.hidden=false});
+    backFromSplit.addEventListener('click',()=>{splitScreen.hidden=true;startScreen.hidden=false});
+    restartBtn.addEventListener('click',()=>{results.hidden=true;startScreen.hidden=false});
+  });
+  </script>
+</body>
+</html>

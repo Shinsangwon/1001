@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>덧셈 타이머 게임 (10이하)</title>
   <style>
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,Apple SD Gothic Neo,sans-serif;background:#ffe4ec;color:#222}
-    .wrap{max-width:600px;margin:0 auto;padding:16px}
-    h1{text-align:center;font-size:24px;margin:12px 0}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,Apple SD Gothic Neo,sans-serif;background:#ffe4ec;color:#222;min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .wrap{max-width:600px;width:100%;padding:16px}
+    h1{text-align:center;font-size:28px;margin:12px 0;color:#ff4081}
     .card{background:#fff;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.12);padding:20px;margin-bottom:16px}
     .problem-box{border:3px solid #ff6fa0;border-radius:12px;padding:20px;text-align:center;background:#fff0f5;}
     .problem{font-size:36px;font-weight:bold;margin:10px 0}
@@ -18,27 +18,30 @@
     .feedback{text-align:center;margin-top:12px;height:24px;font-weight:bold}
     .ok{color:green}.bad{color:red}
     #timer{font-weight:bold;font-size:18px}
-    .results h2{text-align:center;margin:0 0 8px}
     .results{padding:20px;text-align:center}
+    .results h2{text-align:center;margin:0 0 8px}
     .ranking ol{padding-left:20px;text-align:left}
-    .finish-message{font-size:20px;color:#ff4081;font-weight:bold;margin-bottom:12px}
+    .finish-message{font-size:24px;color:#ff4081;font-weight:bold;margin-bottom:16px}
+    .center-btn{display:flex;justify-content:center;margin-top:20px}
+    .start-big{padding:20px 40px;font-size:22px;border:none;border-radius:12px;background:#ff4081;color:#fff;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.2);transition:.2s}
+    .start-big:hover{background:#e73370}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>덧셈 타이머 게임 (10이하)</h1>
-    <div class="card">
-      <label>이름(선택): <input id="playerName" placeholder="이름 없으면 '바보'" /></label>
-      <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
-        <button id="startBtn">시작</button>
-        <span id="timer">0.00초</span>
+    <div id="startScreen" class="card">
+      <label>이름(선택): <input id="playerName" placeholder="이름 없으면 '무명'" /></label>
+      <div class="center-btn">
+        <button id="startBtn" class="start-big">게임 시작</button>
       </div>
     </div>
-    <div class="card problem-box">
+    <div id="gameScreen" class="card problem-box" hidden>
       <div class="question-number" id="qNumber">문제 번호</div>
-      <div id="problemBox" class="problem">시작을 누르세요</div>
-      <div class="keypad" id="keypad"></div>
+      <div id="problemBox" class="problem"></div>
+      <div id="keypad" class="keypad"></div>
       <div id="feedback" class="feedback"></div>
+      <div style="margin-top:12px;text-align:center"><span id="timer">0.00초</span></div>
     </div>
     <div id="results" class="card results" hidden>
       <div class="finish-message">수고했어요!</div>
@@ -52,16 +55,22 @@
         <div id="rankInfo"></div>
         <ol id="rankingList"></ol>
       </div>
+      <div class="center-btn">
+        <button id="restartBtn" class="start-big">다시하기</button>
+      </div>
     </div>
   </div>
   <audio id="soundCorrect" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
   <audio id="soundWrong" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
   <script>
     const startBtn=document.getElementById('startBtn');
+    const restartBtn=document.getElementById('restartBtn');
+    const startScreen=document.getElementById('startScreen');
+    const gameScreen=document.getElementById('gameScreen');
+    const results=document.getElementById('results');
     const problemBox=document.getElementById('problemBox');
     const feedbackEl=document.getElementById('feedback');
     const timerEl=document.getElementById('timer');
-    const results=document.getElementById('results');
     const totalTimeEl=document.getElementById('totalTime');
     const correctCountEl=document.getElementById('correctCount');
     const avgTimeEl=document.getElementById('avgTime');
@@ -92,8 +101,7 @@
 
     function start(){
       state={total:10,index:0,startTime:performance.now(),mistakes:0};
-      results.hidden=true;
-      startBtn.disabled=true;
+      results.hidden=true;startScreen.hidden=true;gameScreen.hidden=false;
       nextProblem();
       tick();
     }
@@ -131,13 +139,12 @@
     function finish(){
       cancelAnimationFrame(state.timerId);
       const totalMs=performance.now()-state.startTime;
-      startBtn.disabled=false;
       totalTimeEl.textContent=formatMs(totalMs);
       correctCountEl.textContent=state.total;
       avgTimeEl.textContent=(totalMs/1000/state.total).toFixed(2)+'초';
       mistakesEl.textContent=state.mistakes;
       saveRanking(totalMs);
-      results.hidden=false;
+      gameScreen.hidden=true;results.hidden=false;
     }
 
     function saveRanking(totalMs){
@@ -164,6 +171,9 @@
     }
 
     startBtn.addEventListener('click',start);
+    restartBtn.addEventListener('click',()=>{
+      results.hidden=true;startScreen.hidden=false;
+    });
   </script>
 </body>
 </html>

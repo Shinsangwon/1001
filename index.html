@@ -166,36 +166,31 @@
     }
 
     // ---------- 모으기/가르기 게임 ----------
-    // 문제는 항상 빈칸 3개, 해답은 모두 1~20의 양의 정수로 제한되도록 생성
     function newSplitProblem(){
-      // 무한루프 방지용 시도 제한
-      for(let tries=0; tries<100; tries++){
-        const isAdd = Math.random()<0.5; // 덧셈형/뺄셈형 랜덤
+      for(let tries=0; tries<200; tries++){
+        const isAdd = Math.random()<0.5;
         if(isAdd){
-          // 덧셈형: x+y <= 20, x in [11..19], y in [1..(20-x)]
-          const x = randInt(11,19);
-          const y = randInt(1,20-x);
-          const rest = x-10; // 1..9
-          const s2 = rest + y; // <=10
-          const s3 = x + y; // <=20
-          if(s2>=1 && s2<=20 && s3>=1 && s3<=20){
-            return {type:'add',a:x,b:y,solution:[rest,s2,s3]};
+          // 덧셈형: 최종 결과 ≤ 20
+          const a = randInt(11,19);
+          const b = randInt(1,20-a);
+          const rest=a-10;
+          const s2=rest+b;
+          const s3=a+b;
+          if(s3<=20 && s2>=1 && s2<=20){
+            return {type:'add',a:a,b:b,solution:[rest,s2,s3]};
           }
         }else{
-          // 뺄셈형: 두번째 빈칸 y-rest가 양수가 되도록 y>rest, x in [11..18]
-          const x = randInt(11,18);
-          const rest = x - 10; // 1..8
-          const y = randInt(rest+1, Math.min(9, x-1)); // 보장: y>rest, y<=9, y<x
-          if(y && y>rest){
-            const s2 = y - rest; // 1..9
-            const s3 = x - y; // 최소 1, 최대 17
-            if(s2>=1 && s2<=20 && s3>=1 && s3<=20){
-              return {type:'sub',a:x,b:y,solution:[rest,s2,s3]};
-            }
+          // 뺄셈형: 최종 결과 ∈ [1..10]
+          const a=randInt(11,20);
+          const rest=a-10;
+          const b=randInt(rest+1,Math.min(9,a-1));
+          const s2=b-rest;
+          const s3=a-b;
+          if(s3>=1 && s3<=10 && s2>=1 && s2<=20){
+            return {type:'sub',a:a,b:b,solution:[rest,s2,s3]};
           }
         }
       }
-      // 폴백(이론상 도달하지 않음)
       return {type:'add',a:11,b:1,solution:[1,2,12]};
     }
 
@@ -216,8 +211,6 @@
 
     function renderSplitProblem(){
       const {type,a,b} = state.current;
-      // 표시: 12 + 5 = 10 + (  ) + 5 = 10 + (  ) = (  )
-      //     17 - 8 = 10 + (  ) - 8 = 10 - (  ) = (  )
       if(type==='add'){
         problemBoxSplit.innerHTML = `${a} + ${b} = 10 + <span class="blank ${state.focus===0?'active':''}">${state.answers[0]??''}</span> + ${b} = 10 + <span class="blank ${state.focus===1?'active':''}">${state.answers[1]??''}</span> = <span class="blank ${state.focus===2?'active':''}">${state.answers[2]??''}</span>`;
       }else{
@@ -252,7 +245,6 @@
         soundWrong.play();
         feedbackSplit.textContent='오답! 다시 시도';feedbackSplit.className='feedback bad';
         state.mistakes++;
-        // 처음부터 다시 입력하도록 초기화
         state.answers=[null,null,null];
         state.focus=0;
         renderSplitProblem();

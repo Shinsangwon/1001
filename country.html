@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>나라 수도 국기 게임</title>
+  <title>나라 수도 국기 게임1.5</title>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -17,7 +17,7 @@
     }
     #app {
       width: 100%;
-      max-width: 480px;
+      max-width: 500px;
       padding: 20px;
     }
     .card {
@@ -35,7 +35,7 @@
     button {
       display: block;
       width: 100%;
-      margin: 10px 0;
+      margin: 8px 0;
       padding: 12px;
       font-size: 16px;
       border: none;
@@ -46,20 +46,16 @@
     .choice-btn {
       background: #ffdd57;
     }
-    .choice-btn:hover {
-      background: #ffcc33;
-    }
+    .choice-btn:hover { background: #ffcc33; }
     .nav-btn {
       background: #6c63ff;
       color: #fff;
       font-size: 14px;
       padding: 10px;
       width: 60%;
-      margin: 15px auto;
+      margin: 10px auto;
     }
-    .nav-btn:hover {
-      background: #574bdb;
-    }
+    .nav-btn:hover { background: #574bdb; }
     img.flag {
       width: 120px;
       height: auto;
@@ -75,11 +71,9 @@
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 8px;
+      padding: 6px;
     }
-    th {
-      background: #f0f0f0;
-    }
+    th { background: #f0f0f0; }
   </style>
 </head>
 <body>
@@ -94,49 +88,31 @@
     let startTime;
     let shuffledQuestions = [];
 
-    // 데이터 로드
     fetch("https://shinsangwon.github.io/1001/countries.json")
       .then(res => res.json())
       .then(data => {
         countries = data;
-        showPlayerSelection();
+        showMainMenu();
       });
 
-    // 참가자 선택 화면
-    function showPlayerSelection() {
-      document.getElementById("app").innerHTML = `
-        <div class="card">
-          <h2>참가자 선택</h2>
-          <button class="choice-btn" onclick="selectPlayer('신준열')">신준열</button>
-          <button class="choice-btn" onclick="selectPlayer('신규열')">신규열</button>
-          <button class="choice-btn" onclick="selectPlayer('파닥이')">파닥이</button>
-          <button class="choice-btn" onclick="selectPlayer('수박이')">수박이</button>
-          <input type="text" id="customPlayer" placeholder="직접 입력" style="width:90%; padding:10px; margin:10px 0;">
-          <button class="nav-btn" onclick="customPlayerSelect()">시작하기</button>
-        </div>
-      `;
-    }
-
-    function selectPlayer(name) {
-      selectedPlayer = name;
-      showMenu();
-    }
-    function customPlayerSelect() {
-      const name = document.getElementById("customPlayer").value.trim();
-      if (name) {
-        selectedPlayer = name;
-        showMenu();
-      }
-    }
-
-    // 초기 메뉴
-    function showMenu() {
+    // 메인 메뉴 (참가자 선택 + 게임 선택 통합)
+    function showMainMenu() {
       document.getElementById("app").innerHTML = `
         <div class="card">
           <h1>나라 수도 국기 게임</h1>
           <p>모든 게임은 5문제씩 출제됩니다!</p>
-          <button class="choice-btn" onclick="startGame(1)">1. 나라 이름 → 수도 맞추기</button>
-          <button class="choice-btn" onclick="startGame(2)">2. 수도 이름 → 나라 맞추기</button>
+          <h3>참가자 선택</h3>
+          <div>
+            <button class="choice-btn" onclick="setPlayer('신준열')">신준열</button>
+            <button class="choice-btn" onclick="setPlayer('신규열')">신규열</button>
+            <button class="choice-btn" onclick="setPlayer('파닥이')">파닥이</button>
+            <button class="choice-btn" onclick="setPlayer('수박이')">수박이</button>
+            <input type="text" id="customPlayer" placeholder="직접 입력" style="width:90%; padding:10px; margin:10px 0;">
+            <button class="nav-btn" onclick="customPlayerSelect()">참가자 등록</button>
+          </div>
+          <h3>게임 선택</h3>
+          <button class="choice-btn" onclick="startGame(1)">1. 나라 → 수도 맞추기</button>
+          <button class="choice-btn" onclick="startGame(2)">2. 수도 → 나라 맞추기</button>
           <button class="choice-btn" onclick="startGame(3)">3. 국기 → 나라 맞추기</button>
           <button class="choice-btn" onclick="startGame(4)">4. 나라 → 국기 맞추기</button>
           <button class="choice-btn" onclick="showStudy()">5. 나라-수도-국기 공부</button>
@@ -144,8 +120,14 @@
       `;
     }
 
-    // 게임 시작
+    function setPlayer(name) { selectedPlayer = name; alert(`참가자: ${selectedPlayer}`); }
+    function customPlayerSelect() {
+      const name = document.getElementById("customPlayer").value.trim();
+      if (name) { selectedPlayer = name; alert(`참가자: ${selectedPlayer}`); }
+    }
+
     function startGame(gameNumber) {
+      if (!selectedPlayer) { alert("먼저 참가자를 선택해주세요!"); return; }
       currentGame = gameNumber;
       currentQuestion = 0;
       score = 0;
@@ -154,7 +136,6 @@
       showQuestion();
     }
 
-    // 문제 표시
     function showQuestion() {
       const q = shuffledQuestions[currentQuestion];
       let choices = [];
@@ -162,21 +143,21 @@
       let correctAnswer = "";
       let imgTag = "";
 
-      if (currentGame === 1) { // 나라→수도
+      if (currentGame === 1) {
         correctAnswer = q.capital_ko;
         choices = generateChoices("capital_ko", correctAnswer);
         questionText = `(${q.continent_ko}) ${q.country_ko}의 수도는 어디일까요?`;
         imgTag = `<img src="${q.flag}" class="flag">`;
-      } else if (currentGame === 2) { // 수도→나라
+      } else if (currentGame === 2) {
         correctAnswer = q.country_ko;
         choices = generateChoices("country_ko", correctAnswer);
         questionText = `${q.capital_ko}의 수도를 가진 나라는 어디일까요? (${q.continent_ko})`;
-      } else if (currentGame === 3) { // 국기→나라
+      } else if (currentGame === 3) {
         correctAnswer = q.country_ko;
         choices = generateChoices("country_ko", correctAnswer);
         questionText = `이 국기는 어떤 나라의 국기일까요? (${q.continent_ko})`;
         imgTag = `<img src="${q.flag}" class="flag">`;
-      } else if (currentGame === 4) { // 나라→국기
+      } else if (currentGame === 4) {
         correctAnswer = q.flag;
         choices = generateChoices("flag", correctAnswer);
         questionText = `(${q.continent_ko}) ${q.country_ko}의 국기는 어느 것일까요?`;
@@ -202,7 +183,6 @@
       `;
     }
 
-    // 보기 생성
     function generateChoices(key, correct) {
       let arr = [correct];
       while (arr.length < 5) {
@@ -212,7 +192,6 @@
       return shuffle(arr);
     }
 
-    // 정답 확인
     function checkAnswer(answer, correct) {
       let feedback = "";
       const q = shuffledQuestions[currentQuestion];
@@ -243,12 +222,11 @@
         <div class="card">
           ${feedback}
           <button class="nav-btn" onclick="nextQuestion()">다음 문제</button>
-          <button class="nav-btn" onclick="showMenu()">처음으로</button>
+          <button class="nav-btn" onclick="showMainMenu()">처음으로</button>
         </div>
       `;
     }
 
-    // 다음 문제
     function nextQuestion() {
       currentQuestion++;
       if (currentQuestion < 5) {
@@ -258,25 +236,61 @@
       }
     }
 
-    // 결과
     function showResult() {
       const timeTaken = Math.floor((new Date() - startTime)/1000);
+      saveScore(currentGame, selectedPlayer, score, timeTaken);
+      const rankMsg = getRankingMessage(currentGame, selectedPlayer, score, timeTaken);
+
       document.getElementById("app").innerHTML = `
         <div class="card">
           <h2>게임 종료!</h2>
           <p>${selectedPlayer}님 점수: ${score}/5</p>
           <p>풀이시간: ${timeTaken}초</p>
-          <button class="nav-btn" onclick="showMenu()">처음으로</button>
+          <p>${rankMsg}</p>
+          ${renderRanking(currentGame)}
+          <button class="nav-btn" onclick="showMainMenu()">처음으로</button>
         </div>
       `;
     }
 
-    // 섞기
+    // 점수 저장
+    function saveScore(game, player, score, time) {
+      const key = `ranking_game${game}`;
+      let ranking = JSON.parse(localStorage.getItem(key)) || [];
+      ranking.push({player, score, time});
+      ranking.sort((a,b)=> b.score-a.score || a.time-b.time);
+      ranking = ranking.slice(0,10);
+      localStorage.setItem(key, JSON.stringify(ranking));
+    }
+
+    function renderRanking(game) {
+      const key = `ranking_game${game}`;
+      let ranking = JSON.parse(localStorage.getItem(key)) || [];
+      let rows = ranking.map((r,i)=> `<tr><td>${i+1}</td><td>${r.player}</td><td>${r.score}</td><td>${r.time}초</td></tr>`).join("");
+      return `
+        <h3>순위표</h3>
+        <table>
+          <tr><th>순위</th><th>참가자</th><th>점수</th><th>시간</th></tr>
+          ${rows}
+        </table>
+      `;
+    }
+
+    function getRankingMessage(game, player, score, time) {
+      const key = `ranking_game${game}`;
+      let ranking = JSON.parse(localStorage.getItem(key)) || [];
+      const idx = ranking.findIndex(r=> r.player===player && r.score===score && r.time===time);
+      if (idx>-1 && idx<10) {
+        return `축하합니다! ${idx+1}위입니다!! 🎉`;
+      } else {
+        return "아쉽네요... 분발하세요!!";
+      }
+    }
+
     function shuffle(arr) {
       return arr.sort(()=>Math.random()-0.5);
     }
 
-    // 공부 모드
     function showStudy() {
       const sorted = [...countries].sort((a,b)=>{
         if (a.continent_ko===b.continent_ko) return a.country_ko.localeCompare(b.country_ko,"ko");
@@ -296,7 +310,7 @@
             <tr><th>대륙</th><th>국기</th><th>나라</th><th>수도</th></tr>
             ${rows}
           </table>
-          <button class="nav-btn" onclick="showMenu()">처음으로</button>
+          <button class="nav-btn" onclick="showMainMenu()">처음으로</button>
         </div>
       `;
     }

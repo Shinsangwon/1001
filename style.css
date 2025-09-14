@@ -1,0 +1,223 @@
+/* 기본 레이아웃 */
+body {
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  background: linear-gradient(to bottom, #fceabb, #f8b500);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#app {
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+}
+
+/* 카드 스타일 */
+.card {
+  background: #fff;
+  border-radius: 15px;
+  padding: 20px;
+  margin: 10px 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,.1);
+  text-align: center;
+}
+
+h1, h2, h3 {
+  margin: 10px 0;
+  color: #333;
+}
+
+/* 버튼 스타일 */
+.option-btn {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 12px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: #f8b500;
+  color: #fff;
+  cursor: pointer;
+}
+
+.half-btn {
+  display: inline-block;
+  width: 48%;
+  margin: 4px 1%;
+  padding: 10px;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #f8b500;
+  color: #fff;
+  cursor: pointer;
+}
+
+.nav-btn {
+  display: inline-block;
+  margin: 10px 5px;
+  padding: 8px 16px;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #6c757d;
+  color: #fff;
+  cursor: pointer;
+}
+
+.small-btn {
+  display: inline-block;
+  margin: 5px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border: none;
+  border-radius: 6px;
+  background: #007bff;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* 국기 이미지 */
+img.flag {
+  width: 150px;
+  border: 1px solid #ccc;
+  margin: 10px 0;
+  border-radius: 8px;
+}
+
+/* 오답 국기 X표시 */
+.wrong-flag {
+  position: relative;
+  display: inline-block;
+}
+
+.wrong-flag::after {
+  content: "✖";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  font-size: 60px;
+  color: red;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 테이블 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 6px;
+  font-size: 14px;
+}
+
+th {
+  background: #f8b500;
+  color: #fff;
+}
+
+/* 입력창 */
+input[type="text"] {
+  padding: 8px;
+  width: 90%;
+  margin: 10px 0;
+}
+
+/* ===== 세계지도 퀴즈(mapQuiz.js) ===== */
+
+#map {
+  width: 100%;
+  height: 560px;
+  background: #e9ecef;
+  border-radius: 10px;
+}
+
+.panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.choice {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.choice.correct {
+  background: #d1ffd6;
+  border-color: #5dbb63;
+}
+
+.choice.wrong {
+  background: #ffe1e1;
+  border-color: #ff6b6b;
+}
+
+.status {
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.status.correct {
+  color: #2f9e44;
+}
+
+.status.wrong {
+  color: #c92a2a;
+}
+
+.answer-box {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.answer-box img {
+  width: 40px;
+  height: auto;
+  border: 1px solid #999;
+}
+
+/* 푸터 */
+footer {
+  color: #666;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px 10px;
+}
+
+.note {
+  color: #666;
+  font-size: 13px;
+  margin-top: 6px;
+}

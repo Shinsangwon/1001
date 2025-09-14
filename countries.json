@@ -46,7 +46,7 @@
   {"country_ko":"아랍에미리트","country_en":"United Arab Emirates","capital_ko":"아부다비","capital_en":"Abu Dhabi","continent_ko":"아시아","continent_en":"Asia","flag":"https://flagcdn.com/w320/ae.png"},
   {"country_ko":"우즈베키스탄","country_en":"Uzbekistan","capital_ko":"타슈켄트","capital_en":"Tashkent","continent_ko":"아시아","continent_en":"Asia","flag":"https://flagcdn.com/w320/uz.png"},
   {"country_ko":"베트남","country_en":"Vietnam","capital_ko":"하노이","capital_en":"Hanoi","continent_ko":"아시아","continent_en":"Asia","flag":"https://flagcdn.com/w320/vn.png"},
-  {"country_ko":"예멘","country_en":"Yemen","capital_ko":"사나","capital_en":"Sana'a","continent_ko":"아시아","continent_en":"Asia","flag":"https://flagcdn.com/w320/ye.png"}
+  {"country_ko":"예멘","country_en":"Yemen","capital_ko":"사나","capital_en":"Sana'a","continent_ko":"아시아","continent_en":"Asia","flag":"https://flagcdn.com/w320/ye.png"},
   {"country_ko":"알바니아","country_en":"Albania","capital_ko":"티라나","capital_en":"Tirana","continent_ko":"유럽","continent_en":"Europe","flag":"https://flagcdn.com/w320/al.png"},
   {"country_ko":"안도라","country_en":"Andorra","capital_ko":"안도라라벨라","capital_en":"Andorra la Vella","continent_ko":"유럽","continent_en":"Europe","flag":"https://flagcdn.com/w320/ad.png"},
   {"country_ko":"오스트리아","country_en":"Austria","capital_ko":"비엔나","capital_en":"Vienna","continent_ko":"유럽","continent_en":"Europe","flag":"https://flagcdn.com/w320/at.png"},
@@ -91,7 +91,7 @@
   {"country_ko":"스위스","country_en":"Switzerland","capital_ko":"베른","capital_en":"Bern","continent_ko":"유럽","continent_en":"Europe","flag":"https://flagcdn.com/w320/ch.png"},
   {"country_ko":"우크라이나","country_en":"Ukraine","capital_ko":"키이우","capital_en":"Kyiv","continent_ko":"유럽","continent_en":"Europe","flag":"https://flagcdn.com/w320/ua.png"},
   {"country_ko":"영국","country_en":"United Kingdom","capital_ko":"런던","capital_en":"London","continent_ko":"유럽","continent_en":"Europe","flag":"https://flagcdn.com/w320/gb.png"},
-  {"country_ko":"바티칸","country_en":"Vatican City","capital_ko":"바티칸시티","capital_en":"Vatican City","continent_ko":"유럽","continent_en":"Europe","flag":"https://flagcdn.com/w320/va.png"}
+  {"country_ko":"바티칸","country_en":"Vatican City","capital_ko":"바티칸시티","capital_en":"Vatican City","continent_ko":"유럽","continent_en":"Europe","flag":"https://flagcdn.com/w320/va.png"},
   {"country_ko":"알제리","country_en":"Algeria","capital_ko":"알제","capital_en":"Algiers","continent_ko":"아프리카","continent_en":"Africa","flag":"https://flagcdn.com/w320/dz.png"},
   {"country_ko":"앙골라","country_en":"Angola","capital_ko":"루안다","capital_en":"Luanda","continent_ko":"아프리카","continent_en":"Africa","flag":"https://flagcdn.com/w320/ao.png"},
   {"country_ko":"베냉","country_en":"Benin","capital_ko":"포르토노보","capital_en":"Porto-Novo","continent_ko":"아프리카","continent_en":"Africa","flag":"https://flagcdn.com/w320/bj.png"},
@@ -145,7 +145,7 @@
   {"country_ko":"튀니지","country_en":"Tunisia","capital_ko":"튀니스","capital_en":"Tunis","continent_ko":"아프리카","continent_en":"Africa","flag":"https://flagcdn.com/w320/tn.png"},
   {"country_ko":"우간다","country_en":"Uganda","capital_ko":"캄팔라","capital_en":"Kampala","continent_ko":"아프리카","continent_en":"Africa","flag":"https://flagcdn.com/w320/ug.png"},
   {"country_ko":"잠비아","country_en":"Zambia","capital_ko":"루사카","capital_en":"Lusaka","continent_ko":"아프리카","continent_en":"Africa","flag":"https://flagcdn.com/w320/zm.png"},
-  {"country_ko":"짐바브웨","country_en":"Zimbabwe","capital_ko":"하라레","capital_en":"Harare","continent_ko":"아프리카","continent_en":"Africa","flag":"https://flagcdn.com/w320/zw.png"}
+  {"country_ko":"짐바브웨","country_en":"Zimbabwe","capital_ko":"하라레","capital_en":"Harare","continent_ko":"아프리카","continent_en":"Africa","flag":"https://flagcdn.com/w320/zw.png"},
   {"country_ko":"앤티가 바부다","country_en":"Antigua and Barbuda","capital_ko":"세인트존스","capital_en":"St. John's","continent_ko":"아메리카","continent_en":"Americas","flag":"https://flagcdn.com/w320/ag.png"},
   {"country_ko":"바하마","country_en":"Bahamas","capital_ko":"나소","capital_en":"Nassau","continent_ko":"아메리카","continent_en":"Americas","flag":"https://flagcdn.com/w320/bs.png"},
   {"country_ko":"바베이도스","country_en":"Barbados","capital_ko":"브리지타운","capital_en":"Bridgetown","continent_ko":"아메리카","continent_en":"Americas","flag":"https://flagcdn.com/w320/bb.png"},
@@ -180,7 +180,7 @@
   {"country_ko":"페루","country_en":"Peru","capital_ko":"리마","capital_en":"Lima","continent_ko":"아메리카","continent_en":"Americas","flag":"https://flagcdn.com/w320/pe.png"},
   {"country_ko":"수리남","country_en":"Suriname","capital_ko":"파라마리보","capital_en":"Paramaribo","continent_ko":"아메리카","continent_en":"Americas","flag":"https://flagcdn.com/w320/sr.png"},
   {"country_ko":"우루과이","country_en":"Uruguay","capital_ko":"몬테비데오","capital_en":"Montevideo","continent_ko":"아메리카","continent_en":"Americas","flag":"https://flagcdn.com/w320/uy.png"},
-  {"country_ko":"베네수엘라","country_en":"Venezuela","capital_ko":"카라카스","capital_en":"Caracas","continent_ko":"아메리카","continent_en":"Americas","flag":"https://flagcdn.com/w320/ve.png"}
+  {"country_ko":"베네수엘라","country_en":"Venezuela","capital_ko":"카라카스","capital_en":"Caracas","continent_ko":"아메리카","continent_en":"Americas","flag":"https://flagcdn.com/w320/ve.png"},
   {"country_ko":"호주","country_en":"Australia","capital_ko":"캔버라","capital_en":"Canberra","continent_ko":"오세아니아","continent_en":"Oceania","flag":"https://flagcdn.com/w320/au.png"},
   {"country_ko":"피지","country_en":"Fiji","capital_ko":"수바","capital_en":"Suva","continent_ko":"오세아니아","continent_en":"Oceania","flag":"https://flagcdn.com/w320/fj.png"},
   {"country_ko":"키리바시","country_en":"Kiribati","capital_ko":"타라와","capital_en":"Tarawa","continent_ko":"오세아니아","continent_en":"Oceania","flag":"https://flagcdn.com/w320/ki.png"},

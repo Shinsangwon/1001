@@ -161,10 +161,8 @@ function checkAnswer(choice) {
 
   if (isCorrect) {
     score++;
-    document.getElementById("correctSound").play();
     html += `<p><b>정답!</b></p>`;
   } else {
-    document.getElementById("wrongSound").play();
     if (currentGame === 1) {
       html += `<p>오답! 정답은 <b>${q.answer.capital_ko}</b></p>`;
     } else if (currentGame === 2) {
@@ -238,104 +236,4 @@ function showLeaderboardMenu() {
       <h2>순위 확인</h2>
       <button class="option-btn" onclick="showLeaderboard(1)">1. 나라 → 수도</button>
       <button class="option-btn" onclick="showLeaderboard(2)">2. 수도 → 나라</button>
-      <button class="option-btn" onclick="showLeaderboard(3)">3. 국기 → 나라</button>
-      <button class="option-btn" onclick="showLeaderboard(4)">4. 나라 → 국기</button>
-      <button class="option-btn" onclick="showLeaderboard(5)">5. 세계지도 퀴즈</button>
-      <button class="nav-btn" onclick="showHome()">처음으로</button>
-    </div>
-  `;
-}
-
-function showLeaderboard(gameType) {
-  loadScoresFromSheet(data => {
-    const filtered = data.filter(d => Number(d.game) === gameType);
-    filtered.sort((a, b) => (b.score - a.score) || (a.time - b.time));
-    const rows = filtered.slice(0, 10).map((e, i) =>
-      `<tr><td>${i + 1}</td><td>${e.player}</td><td>${e.score}</td><td>${e.time}초</td></tr>`
-    ).join("");
-    document.getElementById("app").innerHTML = `
-      <div class="card">
-        <h2>게임 ${gameType} 순위</h2>
-        <table>
-          <tr><th>순위</th><th>이름</th><th>점수</th><th>시간(초)</th></tr>
-          ${rows}
-        </table>
-        <button class="nav-btn" onclick="showLeaderboardMenu()">뒤로</button>
-      </div>
-    `;
-  });
-}
-
-// ====================== Google Form 저장 ======================
-function saveScoreToSheet(game, player, score, time) {
-  const formData = new FormData();
-  formData.append(ENTRY_GAME, game);
-  formData.append(ENTRY_PLAYER, player);
-  formData.append(ENTRY_SCORE, score);
-  formData.append(ENTRY_TIME, time);
-
-  fetch(FORM_URL, {
-    method: "POST",
-    body: formData,
-    mode: "no-cors"
-  }).then(() => {
-    console.log("폼 제출 성공 (시트에 기록됨)");
-  }).catch(err => console.error("폼 제출 오류:", err));
-}
-
-// ====================== Google Sheet CSV 불러오기 ======================
-function loadScoresFromSheet(callback) {
-  fetch(CSV_URL)
-    .then(res => res.text())
-    .then(text => {
-      const rows = text.trim().split("\n").map(line => line.split(","));
-      const data = rows.slice(1).map(r => ({
-        game: r[0],
-        player: r[1],
-        score: Number(r[2]),
-        time: Number(r[3]),
-        timestamp: r[4]
-      }));
-      callback(data);
-    })
-    .catch(err => console.error("불러오기 오류:", err));
-}
-
-// ====================== 공부 모드 ======================
-function showStudy(filter = "전체") {
-  let filtered = countries;
-  if (filter !== "전체") {
-    filtered = countries.filter(c => c.continent_ko === filter);
-  }
-  const rows = [...filtered]
-    .sort((a, b) => a.continent_ko.localeCompare(b.continent_ko, "ko") || a.country_ko.localeCompare(b.country_ko, "ko"))
-    .map(c => `
-      <tr>
-        <td>${c.continent_ko}</td>
-        <td><img src="${c.flag}" alt="flag" width="40"></td>
-        <td>${c.country_ko}</td>
-        <td>${c.capital_ko || ""}</td>
-      </tr>`).join("");
-
-  document.getElementById("app").innerHTML = `
-    <div class="card">
-      <h2>나라-수도-국기 공부</h2>
-      <div>
-        <button class="small-btn" onclick="showStudy('전체')">전체보기</button>
-        <button class="small-btn" onclick="showStudy('아메리카')">아메리카</button>
-        <button class="small-btn" onclick="showStudy('아시아')">아시아</button>
-        <button class="small-btn" onclick="showStudy('아프리카')">아프리카</button>
-        <button class="small-btn" onclick="showStudy('오세아니아')">오세아니아</button>
-        <button class="small-btn" onclick="showStudy('유럽')">유럽</button>
-      </div>
-      <table>
-        <tr><th>대륙</th><th>국기</th><th>국가</th><th>수도</th></tr>
-        ${rows}
-      </table>
-      <button class="nav-btn" onclick="showHome()">처음으로</button>
-    </div>
-  `;
-}
-
-// ====================== 시작 ======================
-loadData();
+      <button class="option-btn" onclick="showLeaderboard(3)">3. 국기 → 나라</bu

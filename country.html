@@ -32,48 +32,60 @@
       margin: 10px 0;
       color: #333;
     }
-    button {
+    .option-btn {
       display: block;
       width: 100%;
       margin: 8px 0;
       padding: 12px;
       font-size: 16px;
       border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .choice-btn {
-      background: #ffdd57;
-    }
-    .choice-btn:hover { background: #ffcc33; }
-    .nav-btn {
-      background: #6c63ff;
+      border-radius: 8px;
+      background: #f8b500;
       color: #fff;
-      font-size: 14px;
-      padding: 10px;
-      width: 60%;
-      margin: 10px auto;
+      cursor: pointer;
     }
-    .nav-btn:hover { background: #574bdb; }
+    .nav-btn {
+      display: inline-block;
+      margin: 10px 5px;
+      padding: 8px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      background: #6c757d;
+      color: #fff;
+      cursor: pointer;
+    }
+    .small-btn {
+      display: inline-block;
+      margin: 5px;
+      padding: 6px 12px;
+      font-size: 12px;
+      border: none;
+      border-radius: 6px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+    }
     img.flag {
-      width: 120px;
-      height: auto;
+      width: 150px;
+      border: 1px solid #ccc;
       margin: 10px 0;
-      border: 2px solid #ddd;
       border-radius: 8px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
-      font-size: 14px;
     }
     th, td {
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       padding: 6px;
+      font-size: 14px;
     }
-    th { background: #f0f0f0; }
+    th {
+      background: #f8b500;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -81,239 +93,193 @@
 
   <script>
     let countries = [];
-    let currentGame = 0;
-    let currentQuestion = 0;
-    let selectedPlayer = "";
+    let currentGame = null;
+    let currentPlayer = "";
     let score = 0;
-    let startTime;
-    let shuffledQuestions = [];
+    let questionIndex = 0;
+    let questions = [];
+    let startTime = null;
 
-    fetch("https://shinsangwon.github.io/1001/countries.json")
-      .then(res => res.json())
-      .then(data => {
-        countries = data;
-        showMainMenu();
-      });
+    async function loadData() {
+      const res = await fetch("https://shinsangwon.github.io/1001/countries.json");
+      countries = await res.json();
+      showHome();
+    }
 
-    // 메인 메뉴 (참가자 선택 + 게임 선택 통합)
-    function showMainMenu() {
-      document.getElementById("app").innerHTML = `
+    function showHome() {
+      const app = document.getElementById("app");
+      app.innerHTML = `
         <div class="card">
           <h1>나라 수도 국기 게임</h1>
-          <p>모든 게임은 5문제씩 출제됩니다!</p>
-          <h3>참가자 선택</h3>
-          <div>
-            <button class="choice-btn" onclick="setPlayer('신준열')">신준열</button>
-            <button class="choice-btn" onclick="setPlayer('신규열')">신규열</button>
-            <button class="choice-btn" onclick="setPlayer('파닥이')">파닥이</button>
-            <button class="choice-btn" onclick="setPlayer('수박이')">수박이</button>
-            <input type="text" id="customPlayer" placeholder="직접 입력" style="width:90%; padding:10px; margin:10px 0;">
-            <button class="nav-btn" onclick="customPlayerSelect()">참가자 등록</button>
-          </div>
-          <h3>게임 선택</h3>
-          <button class="choice-btn" onclick="startGame(1)">1. 나라 → 수도 맞추기</button>
-          <button class="choice-btn" onclick="startGame(2)">2. 수도 → 나라 맞추기</button>
-          <button class="choice-btn" onclick="startGame(3)">3. 국기 → 나라 맞추기</button>
-          <button class="choice-btn" onclick="startGame(4)">4. 나라 → 국기 맞추기</button>
-          <button class="choice-btn" onclick="showStudy()">5. 나라-수도-국기 공부</button>
+          <p>이름을 입력하고 게임을 선택하세요 (각각 5문제씩)</p>
+          <input id="playerName" placeholder="참가자 이름" style="padding:8px;width:90%;margin:10px 0;">
+          <button class="option-btn" onclick="startGame(1)">1. 나라 → 수도 맞추기</button>
+          <button class="option-btn" onclick="startGame(2)">2. 수도 → 나라 맞추기</button>
+          <button class="option-btn" onclick="startGame(3)">3. 국기 → 나라 맞추기</button>
+          <button class="option-btn" onclick="startGame(4)">4. 나라 → 국기 맞추기</button>
+          <button class="option-btn" onclick="showStudy()">5. 나라-수도-국기 공부</button>
+          <button class="small-btn" onclick="showLeaderboardMenu()">순위 확인</button>
         </div>
       `;
     }
 
-    function setPlayer(name) { selectedPlayer = name; alert(`참가자: ${selectedPlayer}`); }
-    function customPlayerSelect() {
-      const name = document.getElementById("customPlayer").value.trim();
-      if (name) { selectedPlayer = name; alert(`참가자: ${selectedPlayer}`); }
-    }
-
-    function startGame(gameNumber) {
-      if (!selectedPlayer) { alert("먼저 참가자를 선택해주세요!"); return; }
-      currentGame = gameNumber;
-      currentQuestion = 0;
+    function startGame(gameType) {
+      currentPlayer = document.getElementById("playerName").value.trim();
+      if (!currentPlayer) {
+        alert("이름을 입력하세요!");
+        return;
+      }
+      currentGame = gameType;
       score = 0;
-      shuffledQuestions = shuffle([...countries]).slice(0, 5);
-      startTime = new Date();
+      questionIndex = 0;
+      startTime = Date.now();
+      generateQuestions();
       showQuestion();
     }
 
+    function generateQuestions() {
+      questions = [];
+      let pool = [...countries];
+      for (let i=0; i<5; i++) {
+        const answer = pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+        let options = [answer];
+        while (options.length < 5 && pool.length>0) {
+          let o = pool[Math.floor(Math.random()*pool.length)];
+          if (!options.includes(o)) options.push(o);
+        }
+        options = options.sort(()=>Math.random()-0.5);
+        questions.push({answer, options});
+      }
+    }
+
     function showQuestion() {
-      const q = shuffledQuestions[currentQuestion];
-      let choices = [];
-      let questionText = "";
-      let correctAnswer = "";
-      let imgTag = "";
-
+      const app = document.getElementById("app");
+      const q = questions[questionIndex];
+      let content = `<div class="card"><h3>${questionIndex+1}/5</h3>`;
       if (currentGame === 1) {
-        correctAnswer = q.capital_ko;
-        choices = generateChoices("capital_ko", correctAnswer);
-        questionText = `(${q.continent_ko}) ${q.country_ko}의 수도는 어디일까요?`;
-        imgTag = `<img src="${q.flag}" class="flag">`;
+        content += `<h3>${q.answer.continent_ko}에 있는 ${q.answer.country_ko}의 수도는?</h3>`;
+        q.options.forEach(o=>{
+          content += `<button class="option-btn" onclick="checkAnswer('${o.capital_ko}')">${o.capital_ko}</button>`;
+        });
       } else if (currentGame === 2) {
-        correctAnswer = q.country_ko;
-        choices = generateChoices("country_ko", correctAnswer);
-        questionText = `${q.capital_ko}의 수도를 가진 나라는 어디일까요? (${q.continent_ko})`;
+        content += `<h3>${q.answer.continent_ko}에 있는 수도 ${q.answer.capital_ko}는 어느 나라 수도일까요?</h3>`;
+        q.options.forEach(o=>{
+          content += `<button class="option-btn" onclick="checkAnswer('${o.country_ko}')">${o.country_ko}</button>`;
+        });
       } else if (currentGame === 3) {
-        correctAnswer = q.country_ko;
-        choices = generateChoices("country_ko", correctAnswer);
-        questionText = `이 국기는 어떤 나라의 국기일까요? (${q.continent_ko})`;
-        imgTag = `<img src="${q.flag}" class="flag">`;
+        content += `<h3>다음 국기는 어느 나라 국기일까요? (${q.answer.continent_ko})</h3>`;
+        content += `<img class="flag" src="${q.answer.flag}">`;
+        q.options.forEach(o=>{
+          content += `<button class="option-btn" onclick="checkAnswer('${o.country_ko}')">${o.country_ko}</button>`;
+        });
       } else if (currentGame === 4) {
-        correctAnswer = q.flag;
-        choices = generateChoices("flag", correctAnswer);
-        questionText = `(${q.continent_ko}) ${q.country_ko}의 국기는 어느 것일까요?`;
+        content += `<h3>${q.answer.continent_ko}에 있는 ${q.answer.country_ko}의 국기는?</h3>`;
+        q.options.forEach(o=>{
+          content += `<button class="option-btn" onclick="checkAnswer('${o.country_ko}')"><img class="flag" src="${o.flag}"></button>`;
+        });
       }
-
-      const choiceButtons = choices.map(choice => {
-        if (currentGame === 4) {
-          return `<button class="choice-btn" onclick="checkAnswer('${choice}','${correctAnswer}')">
-                    <img src="${choice}" class="flag">
-                  </button>`;
-        } else {
-          return `<button class="choice-btn" onclick="checkAnswer('${choice}','${correctAnswer}')">${choice}</button>`;
-        }
-      }).join("");
-
-      document.getElementById("app").innerHTML = `
-        <div class="card">
-          <h3>문제 ${currentQuestion+1} / 5</h3>
-          <h2>${questionText}</h2>
-          ${imgTag}
-          ${choiceButtons}
-        </div>
-      `;
+      content += `</div>`;
+      app.innerHTML = content;
     }
 
-    function generateChoices(key, correct) {
-      let arr = [correct];
-      while (arr.length < 5) {
-        const candidate = countries[Math.floor(Math.random()*countries.length)][key];
-        if (candidate && !arr.includes(candidate)) arr.push(candidate);
-      }
-      return shuffle(arr);
-    }
-
-    function checkAnswer(answer, correct) {
-      let feedback = "";
-      const q = shuffledQuestions[currentQuestion];
-
-      if (answer === correct) {
+    function checkAnswer(choice) {
+      const q = questions[questionIndex];
+      const app = document.getElementById("app");
+      let content = `<div class="card"><h3>${questionIndex+1}/5</h3>`;
+      if (currentGame===1 && choice===q.answer.capital_ko) {
         score++;
-        feedback = `<h3>정답!</h3>`;
+        content += `<p>정답!</p>`;
+      } else if (currentGame===2 && choice===q.answer.country_ko) {
+        score++;
+        content += `<p>정답!</p>`;
+      } else if (currentGame===3 && choice===q.answer.country_ko) {
+        score++;
+        content += `<p>정답!</p>`;
+      } else if (currentGame===4 && choice===q.answer.country_ko) {
+        score++;
+        content += `<p>정답!</p>`;
       } else {
-        if (currentGame === 3) {
-          feedback = `
-            <p>정답은 <b>${q.country_ko}</b>입니다.<br>
-            선택하신 <b>${answer}</b>의 국기는 다음과 같습니다.</p>
-            <img src="${countries.find(c=>c.country_ko===answer)?.flag || ''}" class="flag">
-          `;
-        } else if (currentGame === 4) {
-          const selectedCountry = countries.find(c => c.flag === answer)?.country_ko || "알 수 없음";
-          feedback = `
-            <p>선택하신 국기는 <b>${selectedCountry}</b>의 국기입니다.</p>
-            <p>정답인 <b>${q.country_ko}</b>의 국기는 다음과 같습니다.</p>
-            <img src="${q.flag}" class="flag">
-          `;
-        } else {
-          feedback = `<p>오답! 정답은 <b>${correct}</b>입니다.</p>`;
-        }
+        if (currentGame===1) content += `<p>오답! 정답은 ${q.answer.capital_ko}</p>`;
+        if (currentGame===2) content += `<p>오답! 정답은 ${q.answer.country_ko}</p>`;
+        if (currentGame===3) content += `<p>오답! 정답은 ${q.answer.country_ko}입니다. 선택한 국기는 아래와 같습니다.<br><img class="flag" src="${countries.find(c=>c.country_ko===choice).flag}"></p>`;
+        if (currentGame===4) content += `<p>선택하신 국기는 ${countries.find(c=>c.country_ko===choice).country_ko}의 국기입니다.<br>정답은 ${q.answer.country_ko}의 국기입니다.<br><img class="flag" src="${q.answer.flag}"></p>`;
       }
-
-      document.getElementById("app").innerHTML = `
-        <div class="card">
-          ${feedback}
-          <button class="nav-btn" onclick="nextQuestion()">다음 문제</button>
-          <button class="nav-btn" onclick="showMainMenu()">처음으로</button>
-        </div>
-      `;
+      questionIndex++;
+      if (questionIndex<5) {
+        content += `<button class="nav-btn" onclick="showQuestion()">다음 문제</button>`;
+      } else {
+        saveScore();
+        content += `<button class="nav-btn" onclick="showResult()">결과 확인</button>`;
+      }
+      content += `<button class="nav-btn" onclick="showHome()">처음으로</button>`;
+      content += `</div>`;
+      app.innerHTML = content;
     }
 
-    function nextQuestion() {
-      currentQuestion++;
-      if (currentQuestion < 5) {
-        showQuestion();
-      } else {
-        showResult();
-      }
+    function saveScore() {
+      const elapsed = Math.floor((Date.now()-startTime)/1000);
+      let data = JSON.parse(localStorage.getItem("leaderboard")||"{}");
+      if (!data[currentGame]) data[currentGame] = [];
+      data[currentGame].push({player:currentPlayer,score,time:elapsed});
+      data[currentGame].sort((a,b)=> b.score-a.score || a.time-b.time);
+      data[currentGame] = data[currentGame].slice(0,10);
+      localStorage.setItem("leaderboard",JSON.stringify(data));
     }
 
     function showResult() {
-      const timeTaken = Math.floor((new Date() - startTime)/1000);
-      saveScore(currentGame, selectedPlayer, score, timeTaken);
-      const rankMsg = getRankingMessage(currentGame, selectedPlayer, score, timeTaken);
-
-      document.getElementById("app").innerHTML = `
+      const elapsed = Math.floor((Date.now()-startTime)/1000);
+      const app = document.getElementById("app");
+      app.innerHTML = `
         <div class="card">
-          <h2>게임 종료!</h2>
-          <p>${selectedPlayer}님 점수: ${score}/5</p>
-          <p>풀이시간: ${timeTaken}초</p>
-          <p>${rankMsg}</p>
-          ${renderRanking(currentGame)}
-          <button class="nav-btn" onclick="showMainMenu()">처음으로</button>
-        </div>
-      `;
+          <h2>게임 종료</h2>
+          <p>${currentPlayer}님 점수: ${score}/5</p>
+          <p>소요시간: ${elapsed}초</p>
+          <button class="nav-btn" onclick="showHome()">처음으로</button>
+          <button class="nav-btn" onclick="showLeaderboardMenu()">순위 확인</button>
+        </div>`;
     }
 
-    // 점수 저장
-    function saveScore(game, player, score, time) {
-      const key = `ranking_game${game}`;
-      let ranking = JSON.parse(localStorage.getItem(key)) || [];
-      ranking.push({player, score, time});
-      ranking.sort((a,b)=> b.score-a.score || a.time-b.time);
-      ranking = ranking.slice(0,10);
-      localStorage.setItem(key, JSON.stringify(ranking));
+    function showLeaderboardMenu() {
+      const app = document.getElementById("app");
+      app.innerHTML = `
+        <div class="card">
+          <h2>순위 확인</h2>
+          <button class="option-btn" onclick="showLeaderboard(1)">1. 나라 → 수도</button>
+          <button class="option-btn" onclick="showLeaderboard(2)">2. 수도 → 나라</button>
+          <button class="option-btn" onclick="showLeaderboard(3)">3. 국기 → 나라</button>
+          <button class="option-btn" onclick="showLeaderboard(4)">4. 나라 → 국기</button>
+          <button class="nav-btn" onclick="showHome()">처음으로</button>
+        </div>`;
     }
 
-    function renderRanking(game) {
-      const key = `ranking_game${game}`;
-      let ranking = JSON.parse(localStorage.getItem(key)) || [];
-      let rows = ranking.map((r,i)=> `<tr><td>${i+1}</td><td>${r.player}</td><td>${r.score}</td><td>${r.time}초</td></tr>`).join("");
-      return `
-        <h3>순위표</h3>
-        <table>
-          <tr><th>순위</th><th>참가자</th><th>점수</th><th>시간</th></tr>
-          ${rows}
-        </table>
-      `;
-    }
-
-    function getRankingMessage(game, player, score, time) {
-      const key = `ranking_game${game}`;
-      let ranking = JSON.parse(localStorage.getItem(key)) || [];
-      const idx = ranking.findIndex(r=> r.player===player && r.score===score && r.time===time);
-      if (idx>-1 && idx<10) {
-        return `축하합니다! ${idx+1}위입니다!! 🎉`;
-      } else {
-        return "아쉽네요... 분발하세요!!";
-      }
-    }
-
-    function shuffle(arr) {
-      return arr.sort(()=>Math.random()-0.5);
+    function showLeaderboard(gameType) {
+      let data = JSON.parse(localStorage.getItem("leaderboard")||"{}");
+      let list = data[gameType]||[];
+      let html = `<div class="card"><h2>게임 ${gameType} 순위</h2><table><tr><th>순위</th><th>이름</th><th>점수</th><th>시간(초)</th></tr>`;
+      list.forEach((e,i)=>{
+        html+=`<tr><td>${i+1}</td><td>${e.player}</td><td>${e.score}</td><td>${e.time}</td></tr>`;
+      });
+      html+=`</table><button class="nav-btn" onclick="showLeaderboardMenu()">뒤로</button></div>`;
+      document.getElementById("app").innerHTML = html;
     }
 
     function showStudy() {
-      const sorted = [...countries].sort((a,b)=>{
-        if (a.continent_ko===b.continent_ko) return a.country_ko.localeCompare(b.country_ko,"ko");
-        return a.continent_ko.localeCompare(b.continent_ko,"ko");
+      const continents = [...new Set(countries.map(c=>c.continent_ko))].sort();
+      let html = `<div class="card"><h2>나라-수도-국기 공부</h2>`;
+      continents.forEach(cont=>{
+        html+=`<h3>${cont}</h3><table><tr><th>대륙</th><th>국기</th><th>국가</th><th>수도</th></tr>`;
+        countries.filter(c=>c.continent_ko===cont)
+          .sort((a,b)=>a.country_ko.localeCompare(b.country_ko))
+          .forEach(c=>{
+            html+=`<tr><td>${c.continent_ko}</td><td><img src="${c.flag}" width="40"></td><td>${c.country_ko}</td><td>${c.capital_ko||""}</td></tr>`;
+          });
+        html+=`</table>`;
       });
-      const rows = sorted.map(c=>`
-        <tr>
-          <td>${c.continent_ko}</td>
-          <td><img src="${c.flag}" class="flag"></td>
-          <td>${c.country_ko}</td>
-          <td>${c.capital_ko || "-"}</td>
-        </tr>`).join("");
-      document.getElementById("app").innerHTML = `
-        <div class="card">
-          <h2>나라-수도-국기 공부</h2>
-          <table>
-            <tr><th>대륙</th><th>국기</th><th>나라</th><th>수도</th></tr>
-            ${rows}
-          </table>
-          <button class="nav-btn" onclick="showMainMenu()">처음으로</button>
-        </div>
-      `;
+      html+=`<button class="nav-btn" onclick="showHome()">처음으로</button></div>`;
+      document.getElementById("app").innerHTML = html;
     }
+
+    loadData();
   </script>
 </body>
 </html>

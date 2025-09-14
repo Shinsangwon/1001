@@ -13,10 +13,14 @@
     button:hover { background: #e6e6e6; }
     #result { font-size: 18px; font-weight: bold; margin-top: 20px; }
     #rankings { margin-top: 20px; text-align: left; display: inline-block; }
+    #error { color: red; font-weight: bold; }
   </style>
 </head>
 <body>
   <h1>나라-수도 맞추기 게임</h1>
+
+  <!-- 에러 메시지 -->
+  <div id="error"></div>
 
   <!-- 플레이어 선택 화면 -->
   <div id="player-select">
@@ -59,8 +63,14 @@
     let rankings = [];
 
     async function loadData() {
-      const res = await fetch("countries.json");
-      countries = await res.json();
+      try {
+        const res = await fetch("countries.json");
+        if (!res.ok) throw new Error("countries.json 불러오기 실패");
+        countries = await res.json();
+      } catch (err) {
+        document.getElementById("error").textContent = "⚠️ 데이터를 불러오지 못했습니다. 로컬 서버에서 실행하세요.";
+        console.error(err);
+      }
     }
 
     function selectPlayer(name) {
@@ -77,6 +87,10 @@
     }
 
     function startGame() {
+      if (countries.length === 0) {
+        alert("데이터가 로드되지 않았습니다.");
+        return;
+      }
       document.getElementById("player-select").style.display = "none";
       document.getElementById("game").style.display = "block";
       score = 0;
@@ -89,10 +103,11 @@
       document.getElementById("result").textContent = "";
       const country = countries[Math.floor(Math.random() * countries.length)];
       correctCapital = country.capital_ko || country.capital_en;
+      if (!correctCapital) { newQuestion(); return; } // 수도 없는 나라는 건너뛰기
+
       document.getElementById("country-name").textContent = country.country_ko;
       document.getElementById("flag").src = country.flag;
 
-      // 오답 4개 추출
       let wrongChoices = [];
       while (wrongChoices.length < 4) {
         const rand = countries[Math.floor(Math.random() * countries.length)];
@@ -102,11 +117,9 @@
         }
       }
 
-      // 정답 + 오답 합치기
       const allChoices = [correctCapital, ...wrongChoices];
       shuffle(allChoices);
 
-      // 보기 출력
       const choicesDiv = document.getElementById("choices");
       choicesDiv.innerHTML = "";
       allChoices.forEach(choice => {
@@ -144,19 +157,12 @@
       const timeTaken = ((endTime - startTime) / 1000).toFixed(1);
 
       const accuracy = ((score / 10) * 100).toFixed(0);
-      const playerResult = {
-        name: playerName,
-        score: score,
-        accuracy: accuracy,
-        time: timeTaken
-      };
+      const playerResult = { name: playerName, score, accuracy, time: parseFloat(timeTaken) };
 
       rankings.push(playerResult);
-      // 정렬: 점수 우선, 시간 빠른 순
       rankings.sort((a, b) => b.score - a.score || a.time - b.time);
       rankings = rankings.slice(0, 10);
 
-      // 결과 표시
       const summary = `${playerName}님, 10문제 중 ${score}개 정답 (${accuracy}%), 소요 시간 ${timeTaken}초`;
       document.getElementById("summary").textContent = summary;
 
@@ -167,7 +173,7 @@
       rankingText += "</ol>";
       document.getElementById("rankings").innerHTML = rankingText;
 
-      const myRank = rankings.findIndex(r => r.name === playerName && r.score === score && r.time === timeTaken) + 1;
+      const myRank = rankings.findIndex(r => r.name === playerName && r.score === score && r.time === parseFloat(timeTaken)) + 1;
       if (myRank > 0 && myRank <= 10) {
         document.getElementById("rankings").innerHTML += `<p>🎉 축하합니다! ${myRank}위입니다!!</p>`;
       } else {

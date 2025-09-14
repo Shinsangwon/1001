@@ -14,7 +14,7 @@ const ENTRY_PLAYER = "entry.1585525493";
 const ENTRY_SCORE  = "entry.1461471053";
 const ENTRY_TIME   = "entry.1265121960";
 
-// Google Sheet CSV 공개 링크 (반드시 output=csv)
+// Google Sheet CSV 공개 링크
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPmVODPefnMPa5S2iauwxw9aM39Ugd1r1-RnPm5JVIswvmuCB6UmdMgY2PAMvotjPrkEj6No8XU3lF/pub?output=csv";
 
 // ====================== 데이터 로드 ======================
@@ -153,6 +153,9 @@ function checkAnswer(choice) {
   const app = document.getElementById("app");
   let html = `<div class="card"><h3>${questionIndex + 1} / 5</h3>`;
 
+  const correctSfx = document.getElementById("correctSound");
+  const wrongSfx   = document.getElementById("wrongSound");
+
   const isCorrect =
     (currentGame === 1 && choice === q.answer.capital_ko) ||
     (currentGame === 2 && choice === q.answer.country_ko) ||
@@ -161,8 +164,10 @@ function checkAnswer(choice) {
 
   if (isCorrect) {
     score++;
+    if (correctSfx) { try { correctSfx.currentTime = 0; correctSfx.play(); } catch(e){} }
     html += `<p><b>정답!</b></p>`;
   } else {
+    if (wrongSfx) { try { wrongSfx.currentTime = 0; wrongSfx.play(); } catch(e){} }
     if (currentGame === 1) {
       html += `<p>오답! 정답은 <b>${q.answer.capital_ko}</b></p>`;
     } else if (currentGame === 2) {
@@ -264,7 +269,7 @@ function showLeaderboard(gameType) {
   });
 }
 
-// ====================== Google Form 저장 (URL-Encoded) ======================
+// ====================== Google Form 저장 ======================
 function saveScoreToSheet(game, player, score, time) {
   const formBody = new URLSearchParams();
   formBody.append(ENTRY_GAME, game.toString());
@@ -324,3 +329,20 @@ function showStudy(filter = "전체") {
       <h2>나라-수도-국기 공부</h2>
       <div>
         <button class="small-btn" onclick="showStudy('전체')">전체보기</button>
+        <button class="small-btn" onclick="showStudy('아메리카')">아메리카</button>
+        <button class="small-btn" onclick="showStudy('아시아')">아시아</button>
+        <button class="small-btn" onclick="showStudy('아프리카')">아프리카</button>
+        <button class="small-btn" onclick="showStudy('오세아니아')">오세아니아</button>
+        <button class="small-btn" onclick="showStudy('유럽')">유럽</button>
+      </div>
+      <table>
+        <tr><th>대륙</th><th>국기</th><th>국가</th><th>수도</th></tr>
+        ${rows}
+      </table>
+      <button class="nav-btn" onclick="showHome()">처음으로</button>
+    </div>
+  `;
+}
+
+// ====================== 시작 ======================
+loadData();

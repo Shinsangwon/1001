@@ -12,7 +12,7 @@
       padding: 0;
     }
     .container {
-      max-width: 480px;
+      max-width: 600px;
       margin: auto;
       padding: 20px;
     }
@@ -63,18 +63,46 @@
       font-size: 18px;
       margin: 15px 0;
     }
-    #feedbackFlag {
-      margin-top: 10px;
+    .fb-flag {
       width: 200px;
+      margin: 10px auto;
       display: block;
-      margin-left: auto;
-      margin-right: auto;
       border: 3px solid #ddd;
       border-radius: 10px;
+    }
+    .flag-label {
+      margin-bottom: 15px;
+      font-weight: bold;
+      color: #333;
     }
     .back-btn {
       margin-top: 20px;
       background-color: #87ceeb;
+    }
+    /* 공부 모드 테이블 */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      font-size: 14px;
+    }
+    th {
+      background-color: #ffb6c1;
+    }
+    tr:nth-child(even) {
+      background-color: #fff0f5;
+    }
+    tr:nth-child(odd) {
+      background-color: #fefefe;
+    }
+    td img {
+      width: 50px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -82,7 +110,7 @@
   <div class="container">
     <!-- 초기 화면 -->
     <div id="start">
-      <h1>🌍 세계 나라 퀴즈 게임1.0</h1>
+      <h1>🌍 세계 나라 퀴즈 게임1.1</h1>
       <p>플레이어를 선택하세요</p>
       <div id="players"></div>
       <input type="text" id="newPlayer" placeholder="새 참가자 입력">
@@ -92,6 +120,7 @@
       <button onclick="startGame(1)">1. 나라이름 → 수도 맞추기</button>
       <button onclick="startGame(2)">2. 국기 → 나라이름 맞추기</button>
       <button onclick="startGame(3)">3. 나라이름 → 국기 맞추기</button>
+      <button onclick="studyMode()">4. 나라-수도-국기 공부</button>
     </div>
 
     <!-- 게임 화면 -->
@@ -107,8 +136,12 @@
 
     <!-- 정답 피드백 화면 -->
     <div id="feedback" style="display:none;">
-      <p id="feedbackMsg"></p>
-      <img id="feedbackFlag" style="display:none;">
+      <div id="feedbackMsg"></div>
+      <img id="chosenFlag" class="fb-flag" style="display:none;">
+      <div id="chosenLabel" class="flag-label"></div>
+      <div id="answerMsg"></div>
+      <img id="correctFlag" class="fb-flag" style="display:none;">
+      <div id="correctLabel" class="flag-label"></div>
       <button onclick="nextQuestion()">다음 문제</button>
       <div class="back-btn">
         <button onclick="goHome()">🏠 처음으로</button>
@@ -125,6 +158,15 @@
         <button onclick="goHome()">🏠 처음으로</button>
       </div>
     </div>
+
+    <!-- 공부 모드 화면 -->
+    <div id="study" style="display:none;">
+      <h2>📖 나라-수도-국기 공부</h2>
+      <div id="studyTable"></div>
+      <div class="back-btn">
+        <button onclick="goHome()">🏠 처음으로</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -132,7 +174,7 @@
     let currentQ, currentQuestion, score, gameMode, player;
     let startTime;
     let ranking = [];
-    let chosenQ; // 오답 시 선택된 국가 저장
+    let chosenQ;
 
     let defaultPlayers = ["신준열", "신규열", "파닥이", "수박이"];
 
@@ -169,7 +211,11 @@
 
     function nextQuestion(){
       document.getElementById("feedback").style.display="none";
-      document.getElementById("feedbackFlag").style.display="none";
+      document.getElementById("chosenFlag").style.display="none";
+      document.getElementById("correctFlag").style.display="none";
+      document.getElementById("chosenLabel").textContent="";
+      document.getElementById("correctLabel").textContent="";
+      document.getElementById("answerMsg").textContent="";
 
       if(currentQuestion>=10){
         endGame();
@@ -229,26 +275,33 @@
       document.getElementById("game").style.display="none";
       document.getElementById("feedback").style.display="block";
       let msg=document.getElementById("feedbackMsg");
-      let fbFlag=document.getElementById("feedbackFlag");
+      let chosenFlag=document.getElementById("chosenFlag");
+      let correctFlag=document.getElementById("correctFlag");
+      let answerMsg=document.getElementById("answerMsg");
+      let chosenLabel=document.getElementById("chosenLabel");
+      let correctLabel=document.getElementById("correctLabel");
 
       if(correct){
         score++;
         msg.textContent="✅ 정답입니다!";
         msg.style.color="green";
-        fbFlag.style.display="none";
       } else {
         if(gameMode===3){
-          msg.innerHTML=`❌ 오답입니다. 선택하신 국기는 ${chosenQ.country_ko}의 국기입니다.<br>정답은 아래의 국기입니다.`;
-          fbFlag.src=currentQ.flag;
-          fbFlag.style.display="block";
+          msg.innerHTML=`❌ 선택하신 아래 국기는 ${chosenQ.country_ko}의 국기입니다.`;
+          chosenFlag.src=chosenQ.flag;
+          chosenFlag.style.display="block";
+          chosenLabel.textContent=chosenQ.country_ko;
+
+          answerMsg.innerHTML=`정답인 ${currentQ.country_ko}의 국기는 아래의 국기입니다.`;
+          correctFlag.src=currentQ.flag;
+          correctFlag.style.display="block";
+          correctLabel.textContent=currentQ.country_ko;
         } else {
           let correctTxt=(gameMode===1?currentQ.capital_ko:(gameMode===2?currentQ.country_ko:""));
           msg.textContent=`❌ 오답! 정답은 ${correctTxt} 입니다.`;
           msg.style.color="red";
-          fbFlag.style.display="none";
         }
       }
-
       currentQuestion++;
     }
 
@@ -283,6 +336,23 @@
       document.getElementById("game").style.display="none";
       document.getElementById("feedback").style.display="none";
       document.getElementById("result").style.display="none";
+      document.getElementById("study").style.display="none";
+    }
+
+    function studyMode(){
+      document.getElementById("start").style.display="none";
+      document.getElementById("study").style.display="block";
+      let tableHTML="<table><tr><th>나라</th><th>수도</th><th>대륙</th><th>국기</th></tr>";
+      data.forEach(row=>{
+        tableHTML+=`<tr>
+          <td>${row.country_ko}</td>
+          <td>${row.capital_ko?row.capital_ko:"-"}</td>
+          <td>${row.continent_ko}</td>
+          <td><img src="${row.flag}" alt="국기"></td>
+        </tr>`;
+      });
+      tableHTML+="</table>";
+      document.getElementById("studyTable").innerHTML=tableHTML;
     }
 
     fetch("https://shinsangwon.github.io/1001/countries.json")

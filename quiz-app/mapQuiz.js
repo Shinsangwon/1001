@@ -18,25 +18,36 @@ const projection = d3.geoEqualEarth()
 
 const path = d3.geoPath(projection);
 
-const svg = d3.select("body").append("svg")
-  .attr("id", "mapQuizSvg")
-  .attr("viewBox", `0 0 ${width} ${height}`)
-  .style("display", "none")
-  .style("width", "100%")
-  .style("height", "300px");
+// 지도 초기화 함수
+function initWorldMap() {
+  d3.select("#mapContainer").selectAll("*").remove(); // 초기화
 
-const gCountries = svg.append("g");
+  const svg = d3.select("#mapContainer").append("svg")
+    .attr("id", "mapQuizSvg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .style("width", "100%")
+    .style("height", "auto")
+    .style("max-width", "600px")
+    .style("display", "block")
+    .style("margin", "0 auto")
+    .style("border-radius", "8px")
+    .style("background", "#a7d3f5");
 
-const zoom = d3.zoom()
-  .scaleExtent([1, 8])
-  .on("zoom", (event) => gCountries.attr("transform", event.transform));
-svg.call(zoom);
+  const gCountries = svg.append("g");
 
+  const zoom = d3.zoom()
+    .scaleExtent([1, 8])
+    .on("zoom", (event) => gCountries.attr("transform", event.transform));
+  svg.call(zoom);
+
+  return { svg, gCountries };
+}
+
+// 게임 시작
 function showWorldMapQuiz(playerName) {
   mapScore = 0;
   mapQuestionIndex = 0;
 
-  // 지도 준비
   Promise.all([
     fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json").then(r => r.json()),
     fetch("countries.json").then(r => r.json())
@@ -53,15 +64,6 @@ function showWorldMapQuiz(playerName) {
       nameIndex[c.country_en.toLowerCase()] = c.country_en;
       if (c.country_ko) nameIndex[c.country_ko.toLowerCase()] = c.country_en;
     });
-
-    gCountries.selectAll("path.country")
-      .data(features)
-      .join("path")
-      .attr("class", "country")
-      .attr("d", path)
-      .attr("fill", "#d9b38c")
-      .attr("stroke", "#999")
-      .attr("stroke-width", 0.5);
 
     nextWorldMapQuestion(playerName);
   });
@@ -94,6 +96,7 @@ function getDisplayName(name) {
   return koreanNames[name] || name;
 }
 
+// 문제 표시
 function nextWorldMapQuestion(playerName) {
   if (mapQuestionIndex >= 5) {
     endWorldMapQuiz(playerName);
@@ -101,7 +104,6 @@ function nextWorldMapQuestion(playerName) {
   }
 
   current = pickRandomCountry();
-  highlightCountry(current);
 
   const continent = countryInfo[current.properties.name]?.continent_ko || "기타";
 
@@ -120,15 +122,30 @@ function nextWorldMapQuestion(playerName) {
   const app = document.getElementById("app");
   let html = `<div class="card"><h3>${mapQuestionIndex + 1} / 5</h3>`;
   html += `<h3>다음 나라의 이름은 무엇일까요? (${continent})</h3>`;
+  html += `<div id="mapContainer" style="width:100%; max-width:600px; margin:auto; overflow:hidden;"></div>`;
   options.forEach(n => {
     html += `<button class="option-btn" onclick="checkWorldMapAnswer('${playerName}','${escapeQuote(n)}')">${getDisplayName(n)}</button>`;
   });
   html += `</div>`;
   app.innerHTML = html;
 
-  d3.select("#mapQuizSvg").style("display", "block");
+  // 지도 생성
+  const { gCountries: g } = initWorldMap();
+  gCountries = g;
+
+  gCountries.selectAll("path.country")
+    .data(features)
+    .join("path")
+    .attr("class", "country")
+    .attr("d", path)
+    .attr("fill", "#d9b38c")
+    .attr("stroke", "#999")
+    .attr("stroke-width", 0.5);
+
+  highlightCountry(current);
 }
 
+// 정답 확인
 function checkWorldMapAnswer(playerName, choice) {
   const correct = current.properties.name;
   const correctKo = getDisplayName(correct);
@@ -160,6 +177,7 @@ function checkWorldMapAnswer(playerName, choice) {
   document.getElementById("app").innerHTML = html;
 }
 
+// 게임 종료 → 결과창 호출
 function endWorldMapQuiz(playerName) {
   showResult(); // quiz.js의 결과창 호출
 }

@@ -27,18 +27,19 @@
       margin: 10px auto; border: 3px solid #fff; border-radius: 12px;
       box-shadow: 0 3px 8px rgba(0,0,0,0.2);
     }
-    .option, .playerBtn, .modeBtn, #nextBtn {
+    .option, .playerBtn, .modeBtn, #nextBtn, .homeBtn {
       display:block; margin:10px auto; padding:12px;
       border:none; border-radius:18px; cursor:pointer;
       width:80%; max-width:300px; font-size:1em;
       background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.15);
       transition:0.2s;
     }
-    .option:hover, .playerBtn:hover, .modeBtn:hover, #nextBtn:hover {
+    .option:hover, .playerBtn:hover, .modeBtn:hover, #nextBtn:hover, .homeBtn:hover {
       transform: scale(1.05);
     }
     .playerBtn { background:#e6f2ff; }
     .modeBtn { background:#ffe6f2; }
+    .homeBtn { background:#fce4ec; }
     .option img { width:100px; height:auto; border-radius:10px; }
     #feedback { font-size:1.1em; font-weight:bold; }
     #nextBtn { background:#d1f0d1; }
@@ -70,10 +71,12 @@
     <button class="modeBtn" onclick="startGame(1)">1️⃣ 나라 → 수도 맞추기</button>
     <button class="modeBtn" onclick="startGame(2)">2️⃣ 국기 → 나라 맞추기</button>
     <button class="modeBtn" onclick="startGame(3)">3️⃣ 나라 → 국기 맞추기</button>
+    <button class="homeBtn" onclick="goHome()">🏠 처음으로</button>
   </div>
 
   <!-- 게임 영역 -->
   <div id="game">
+    <button class="homeBtn" onclick="goHome()">🏠 처음으로</button>
     <h3 id="qnum"></h3>
     <div id="questionArea"></div>
     <div id="options"></div>
@@ -81,12 +84,14 @@
 
   <!-- 정답 피드백 -->
   <div id="feedback">
+    <button class="homeBtn" onclick="goHome()">🏠 처음으로</button>
     <p id="feedbackMsg"></p>
     <button id="nextBtn" onclick="nextQuestion()">다음 문제</button>
   </div>
 
   <!-- 결과 -->
   <div id="result">
+    <button class="homeBtn" onclick="goHome()">🏠 처음으로</button>
     <h2 id="finalMsg"></h2>
     <div id="leaderboard"></div>
   </div>
@@ -96,9 +101,8 @@
     let currentQuestion = 0, score = 0;
     let selectedPlayer = "", startTime, gameMode = 1;
     let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
-    let currentAnswer = "", currentQ;
+    let currentQ;
 
-    // JSON 불러오기
     fetch("https://shinsangwon.github.io/1001/countries.json")
       .then(res => res.json())
       .then(data => { countries = data; })
@@ -113,10 +117,10 @@
     }
 
     function startGame(mode){
-      gameMode=mode;
-      score=0; currentQuestion=0;
+      gameMode=mode; score=0; currentQuestion=0;
       startTime=Date.now();
       document.getElementById("mode-select").style.display="none";
+      document.getElementById("result").style.display="none";
       document.getElementById("game").style.display="block";
       nextQuestion();
     }
@@ -125,48 +129,48 @@
       document.getElementById("feedback").style.display="none";
       if(currentQuestion>=10){ endGame(); return; }
       currentQ=countries[Math.floor(Math.random()*countries.length)];
-      currentAnswer = (gameMode===1?currentQ.capital_ko:currentQ.country_ko);
       currentQuestion++;
       document.getElementById("qnum").textContent=`문제 ${currentQuestion}/10`;
       const qArea=document.getElementById("questionArea"), optsDiv=document.getElementById("options");
       qArea.innerHTML=""; optsDiv.innerHTML="";
-      
-      if(gameMode===1){ // 나라→수도
+
+      if(gameMode===1){
         qArea.innerHTML=`<h2>${currentQ.continent_ko}에 있는 ${currentQ.country_ko}의 수도는?</h2><img class="flag" src="${currentQ.flag}">`;
         let options=[currentQ.capital_ko];
         while(options.length<5){ let opt=countries[Math.floor(Math.random()*countries.length)].capital_ko; if(opt && !options.includes(opt)) options.push(opt); }
         options.sort(()=>Math.random()-0.5);
-        options.forEach(opt=>{ let btn=document.createElement("button"); btn.className="option"; btn.textContent=opt; btn.onclick=()=>checkAnswer(opt); optsDiv.appendChild(btn); });
+        options.forEach(opt=>{ let btn=document.createElement("button"); btn.className="option"; btn.textContent=opt; btn.onclick=()=>checkAnswer(opt===currentQ.capital_ko); optsDiv.appendChild(btn); });
       }
-      else if(gameMode===2){ // 국기→나라
+      else if(gameMode===2){
         qArea.innerHTML=`<h2>이 국기는 어느 나라일까요?</h2><img class="flag" src="${currentQ.flag}">`;
         let options=[currentQ.country_ko];
         while(options.length<5){ let opt=countries[Math.floor(Math.random()*countries.length)].country_ko; if(opt && !options.includes(opt)) options.push(opt); }
         options.sort(()=>Math.random()-0.5);
-        options.forEach(opt=>{ let btn=document.createElement("button"); btn.className="option"; btn.textContent=opt; btn.onclick=()=>checkAnswer(opt); optsDiv.appendChild(btn); });
+        options.forEach(opt=>{ let btn=document.createElement("button"); btn.className="option"; btn.textContent=opt; btn.onclick=()=>checkAnswer(opt===currentQ.country_ko); optsDiv.appendChild(btn); });
       }
-      else if(gameMode===3){ // 나라→국기
+      else if(gameMode===3){
         qArea.innerHTML=`<h2>${currentQ.continent_ko}에 있는 ${currentQ.country_ko}의 국기는?</h2>`;
         let options=[currentQ.flag];
         while(options.length<5){ let opt=countries[Math.floor(Math.random()*countries.length)].flag; if(opt && !options.includes(opt)) options.push(opt); }
         options.sort(()=>Math.random()-0.5);
-        options.forEach(opt=>{ let btn=document.createElement("button"); btn.className="option"; btn.innerHTML=`<img src="${opt}">`; btn.onclick=()=>checkAnswer(opt); optsDiv.appendChild(btn); });
+        options.forEach(opt=>{ let btn=document.createElement("button"); btn.className="option"; btn.innerHTML=`<img src="${opt}" style="width:100px;">`; btn.onclick=()=>checkAnswer(opt===currentQ.flag); optsDiv.appendChild(btn); });
       }
     }
 
-    function checkAnswer(choice){
+    function checkAnswer(correct){
+      document.getElementById("game").style.display="none";
       document.getElementById("feedback").style.display="block";
       let msg=document.getElementById("feedbackMsg");
-      if((gameMode===1 && choice===currentQ.capital_ko) || (gameMode===2 && choice===currentQ.country_ko) || (gameMode===3 && choice===currentQ.flag)){
-        score++; msg.textContent="✅ 정답입니다!"; msg.style.color="green";
-      } else {
-        let correct = (gameMode===1? currentQ.capital_ko : (gameMode===2? currentQ.country_ko : "해당 국기"));
-        msg.textContent=`❌ 오답! 정답은 ${correct} 입니다.`; msg.style.color="red";
+      if(correct){ score++; msg.textContent="✅ 정답입니다!"; msg.style.color="green"; }
+      else {
+        let correctTxt=(gameMode===1?currentQ.capital_ko:(gameMode===2?currentQ.country_ko:"해당 국기"));
+        msg.textContent=`❌ 오답! 정답은 ${correctTxt} 입니다.`; msg.style.color="red";
       }
     }
 
     function endGame(){
       document.getElementById("game").style.display="none";
+      document.getElementById("feedback").style.display="none";
       document.getElementById("result").style.display="block";
       let time=Math.floor((Date.now()-startTime)/1000);
       let accuracy=Math.round((score/10)*100);
@@ -180,6 +184,15 @@
       let html="<h3>🏆 순위표</h3><table><tr><th>순위</th><th>이름</th><th>점수</th><th>시간</th></tr>";
       leaderboard.forEach((p,i)=>{ html+=`<tr><td>${i+1}</td><td>${p.name}</td><td>${p.score}</td><td>${p.time}</td></tr>`; });
       html+="</table>"; document.getElementById("leaderboard").innerHTML=html;
+    }
+
+    function goHome(){
+      selectedPlayer=""; gameMode=1;
+      document.getElementById("player-select").style.display="block";
+      document.getElementById("mode-select").style.display="none";
+      document.getElementById("game").style.display="none";
+      document.getElementById("feedback").style.display="none";
+      document.getElementById("result").style.display="none";
     }
   </script>
 </body>

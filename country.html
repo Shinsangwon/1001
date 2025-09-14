@@ -2,20 +2,22 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>나라-수도 맞추기 게임1</title>
+  <title>나라-수도 맞추기 게임</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background:#f0f8ff; }
-    #game, #result { display: none; }
+    #game, #result, #feedback { display: none; }
     .flag { width: 120px; margin: 10px auto; }
     .option { display:block; margin:8px auto; padding:10px 20px; border:1px solid #333; border-radius:8px; cursor:pointer; width:200px; background:#fff; }
     .option:hover { background:#e0f7fa; }
     #leaderboard { margin-top:20px; }
     table { border-collapse: collapse; margin:0 auto; }
     th, td { border:1px solid #555; padding:8px 12px; }
+    #feedback { margin-top:20px; font-size:1.2em; }
+    #nextBtn { margin-top:15px; padding:8px 16px; }
   </style>
 </head>
 <body>
-  <h1>나라-수도 맞추기 게임</h1>
+  <h1>나라-수도 맞추기 게임0.5</h1>
 
   <!-- 참가자 선택 -->
   <div id="player-select">
@@ -39,6 +41,12 @@
     <div id="options"></div>
   </div>
 
+  <!-- 정답 피드백 -->
+  <div id="feedback">
+    <p id="feedbackMsg"></p>
+    <button id="nextBtn" onclick="nextQuestion()">다음 문제</button>
+  </div>
+
   <!-- 결과 -->
   <div id="result">
     <h2 id="finalMsg"></h2>
@@ -52,6 +60,7 @@
     let selectedPlayer = "";
     let startTime;
     let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+    let currentAnswer = "";
 
     // JSON 불러오기
     fetch("./countries.json")
@@ -84,8 +93,10 @@
       nextQuestion();
     }
 
-    // 다음 문제
+    // 문제 출제
     function nextQuestion() {
+      document.getElementById("feedback").style.display = "none";
+
       if (currentQuestion >= 10) {
         endGame();
         return;
@@ -93,6 +104,8 @@
       currentQuestion++;
 
       let q = countries[Math.floor(Math.random() * countries.length)];
+      currentAnswer = q.capital_ko;
+
       let options = [q.capital_ko];
       while (options.length < 5) {
         let opt = countries[Math.floor(Math.random() * countries.length)].capital_ko;
@@ -110,17 +123,28 @@
         let btn = document.createElement("button");
         btn.className = "option";
         btn.innerText = opt;
-        btn.onclick = () => {
-          if (opt === q.capital_ko) score++;
-          nextQuestion();
-        };
+        btn.onclick = () => checkAnswer(opt);
         optionsDiv.appendChild(btn);
       });
+    }
+
+    // 정답 확인
+    function checkAnswer(selected) {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("feedback").style.display = "block";
+
+      if (selected === currentAnswer) {
+        score++;
+        document.getElementById("feedbackMsg").innerText = `✅ 정답입니다! (${currentAnswer})`;
+      } else {
+        document.getElementById("feedbackMsg").innerText = `❌ 오답입니다. 정답은 "${currentAnswer}" 입니다.`;
+      }
     }
 
     // 게임 종료
     function endGame() {
       document.getElementById("game").style.display = "none";
+      document.getElementById("feedback").style.display = "none";
       document.getElementById("result").style.display = "block";
 
       let timeTaken = (new Date() - startTime) / 1000;
@@ -143,11 +167,13 @@
         ? `축하합니다! ${rank}위입니다!!`
         : "아쉽네요... 분발하세요!!";
 
-      document.getElementById("finalMsg").innerText = `${selectedPlayer}님의 점수: ${score}/10 (${accuracy}%), 시간: ${timeTaken.toFixed(1)}초\n${msg}`;
+      document.getElementById("finalMsg").innerText =
+        `${selectedPlayer}님의 점수: ${score}/10 (${accuracy}%), 시간: ${timeTaken.toFixed(1)}초\n${msg}`;
 
       renderLeaderboard();
     }
 
+    // 순위표 출력
     function renderLeaderboard() {
       let html = "<h3>🏆 순위표 (Top 10)</h3><table><tr><th>순위</th><th>이름</th><th>정답수</th><th>정답률</th><th>시간(초)</th></tr>";
       leaderboard.forEach((p, i) => {

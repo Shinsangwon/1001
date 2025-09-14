@@ -12,7 +12,7 @@
       padding: 0;
     }
     .container {
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
       padding: 20px;
     }
@@ -20,13 +20,13 @@
       color: #ff6f91;
     }
     button {
-      margin: 8px;
-      padding: 12px 18px;
+      margin: 5px;
+      padding: 10px 16px;
       border: none;
       border-radius: 12px;
       background-color: #ffb347;
       color: white;
-      font-size: 16px;
+      font-size: 14px;
       cursor: pointer;
     }
     button:hover {
@@ -89,6 +89,7 @@
       border: 1px solid #ddd;
       padding: 8px;
       font-size: 14px;
+      text-align: center;
     }
     th {
       background-color: #ffb6c1;
@@ -104,13 +105,16 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
+    .filter-buttons {
+      margin: 10px 0;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <!-- 초기 화면 -->
     <div id="start">
-      <h1>🌍 세계 나라 퀴즈 게임1.1</h1>
+      <h1>🌍 세계 나라 퀴즈 게임1.2</h1>
       <p>플레이어를 선택하세요</p>
       <div id="players"></div>
       <input type="text" id="newPlayer" placeholder="새 참가자 입력">
@@ -162,6 +166,7 @@
     <!-- 공부 모드 화면 -->
     <div id="study" style="display:none;">
       <h2>📖 나라-수도-국기 공부</h2>
+      <div class="filter-buttons" id="continentFilters"></div>
       <div id="studyTable"></div>
       <div class="back-btn">
         <button onclick="goHome()">🏠 처음으로</button>
@@ -342,13 +347,37 @@
     function studyMode(){
       document.getElementById("start").style.display="none";
       document.getElementById("study").style.display="block";
-      let tableHTML="<table><tr><th>나라</th><th>수도</th><th>대륙</th><th>국기</th></tr>";
-      data.forEach(row=>{
+
+      // 대륙 목록
+      let continents = [...new Set(data.map(r=>r.continent_ko))].sort();
+      let btns = `<button onclick="renderTable()">전체</button>`;
+      continents.forEach(c=>{
+        btns+=`<button onclick="renderTable('${c}')">${c}</button>`;
+      });
+      document.getElementById("continentFilters").innerHTML=btns;
+
+      renderTable();
+    }
+
+    function renderTable(filter=""){
+      let tableHTML="<table><tr><th>대륙</th><th>국기</th><th>나라</th><th>수도</th></tr>";
+      let arr=[...data];
+
+      // 정렬: 대륙 가나다순, 대륙 내 국가 가나다순
+      arr.sort((a,b)=>{
+        if(a.continent_ko===b.continent_ko){
+          return a.country_ko.localeCompare(b.country_ko,"ko");
+        }
+        return a.continent_ko.localeCompare(b.continent_ko,"ko");
+      });
+
+      arr.forEach(row=>{
+        if(filter && row.continent_ko!==filter) return;
         tableHTML+=`<tr>
-          <td>${row.country_ko}</td>
-          <td>${row.capital_ko?row.capital_ko:"-"}</td>
           <td>${row.continent_ko}</td>
           <td><img src="${row.flag}" alt="국기"></td>
+          <td>${row.country_ko}</td>
+          <td>${row.capital_ko?row.capital_ko:"-"}</td>
         </tr>`;
       });
       tableHTML+="</table>";

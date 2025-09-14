@@ -3,22 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>나라 수도 국기 게임</title>
+  <title>나라 수도 국기 & 지도 퀴즈</title>
   <link rel="stylesheet" href="style.css" />
-
-  <!-- D3 & TopoJSON (지도 퀴즈용) -->
-  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+    <!-- 초기화면은 quiz.js의 showHome()에서 자동 생성 -->
+  </div>
 
-  <!-- 정답/오답 효과음 -->
-  <audio id="correctSound" src="sounds/correct.mp3" preload="auto"></audio>
-  <audio id="wrongSound" src="sounds/wrong.mp3" preload="auto"></audio>
+  <!-- 효과음 -->
+  <audio id="correctSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+  <audio id="wrongSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
 
-  <!-- 스크립트 -->
+  <!-- D3 & TopoJSON (세계지도 퀴즈에서 사용) -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+
+  <!-- 공통 게임 스크립트 -->
   <script src="quiz.js"></script>
+
+  <!-- 지도 퀴즈 스크립트 -->
   <script src="mapQuiz.js"></script>
 </body>
 </html>

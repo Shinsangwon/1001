@@ -39,7 +39,6 @@
       border: 2px solid #ddd;
       border-radius: 10px;
     }
-    /* 보기 버튼 */
     .choice-btn {
       display:block;
       margin:8px auto;
@@ -51,7 +50,6 @@
       background:#fff;
       cursor:pointer;
     }
-    /* 3번게임 국기 보기 */
     .choice-img {
       width: 180px;
       height: auto;
@@ -64,6 +62,15 @@
     #feedbackMsg {
       font-size: 18px;
       margin: 15px 0;
+    }
+    #feedbackFlag {
+      margin-top: 10px;
+      width: 200px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      border: 3px solid #ddd;
+      border-radius: 10px;
     }
     .back-btn {
       margin-top: 20px;
@@ -101,6 +108,7 @@
     <!-- 정답 피드백 화면 -->
     <div id="feedback" style="display:none;">
       <p id="feedbackMsg"></p>
+      <img id="feedbackFlag" style="display:none;">
       <button onclick="nextQuestion()">다음 문제</button>
       <div class="back-btn">
         <button onclick="goHome()">🏠 처음으로</button>
@@ -124,6 +132,7 @@
     let currentQ, currentQuestion, score, gameMode, player;
     let startTime;
     let ranking = [];
+    let chosenQ; // 오답 시 선택된 국가 저장
 
     let defaultPlayers = ["신준열", "신규열", "파닥이", "수박이"];
 
@@ -160,6 +169,8 @@
 
     function nextQuestion(){
       document.getElementById("feedback").style.display="none";
+      document.getElementById("feedbackFlag").style.display="none";
+
       if(currentQuestion>=10){
         endGame();
         return;
@@ -208,7 +219,7 @@
           let img=document.createElement("img");
           img.src=opt.flag;
           img.className="choice-img";
-          img.onclick=()=>checkAnswer(opt===currentQ);
+          img.onclick=()=>{ chosenQ=opt; checkAnswer(opt===currentQ); };
           choices.appendChild(img);
         });
       }
@@ -218,15 +229,24 @@
       document.getElementById("game").style.display="none";
       document.getElementById("feedback").style.display="block";
       let msg=document.getElementById("feedbackMsg");
+      let fbFlag=document.getElementById("feedbackFlag");
 
       if(correct){
         score++;
         msg.textContent="✅ 정답입니다!";
         msg.style.color="green";
+        fbFlag.style.display="none";
       } else {
-        let correctTxt=(gameMode===1?currentQ.capital_ko:(gameMode===2?currentQ.country_ko:`${currentQ.country_ko}의 국기`));
-        msg.textContent=`❌ 오답! 정답은 ${correctTxt} 입니다.`;
-        msg.style.color="red";
+        if(gameMode===3){
+          msg.innerHTML=`❌ 오답입니다. 선택하신 국기는 ${chosenQ.country_ko}의 국기입니다.<br>정답은 아래의 국기입니다.`;
+          fbFlag.src=currentQ.flag;
+          fbFlag.style.display="block";
+        } else {
+          let correctTxt=(gameMode===1?currentQ.capital_ko:(gameMode===2?currentQ.country_ko:""));
+          msg.textContent=`❌ 오답! 정답은 ${correctTxt} 입니다.`;
+          msg.style.color="red";
+          fbFlag.style.display="none";
+        }
       }
 
       currentQuestion++;

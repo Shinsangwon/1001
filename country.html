@@ -1,199 +1,161 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>나라-수도 맞추기 게임</title>
+  <meta charset="UTF-8">
+  <title>나라-수도 맞추기 게임1</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f9; padding: 20px; }
-    h1 { margin-bottom: 20px; }
-    #game, #result-screen { display: none; }
-    #flag { width: 150px; margin: 10px 0; border: 1px solid #ccc; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); }
-    .choices { display: flex; flex-direction: column; gap: 10px; max-width: 300px; margin: 20px auto; }
-    button { padding: 10px; font-size: 16px; cursor: pointer; border: 1px solid #888; border-radius: 6px; background: #fff; }
-    button:hover { background: #e6e6e6; }
-    #result { font-size: 18px; font-weight: bold; margin-top: 20px; }
-    #rankings { margin-top: 20px; text-align: left; display: inline-block; }
-    #error { color: red; font-weight: bold; }
+    body { font-family: Arial, sans-serif; text-align: center; background:#f0f8ff; }
+    #game, #result { display: none; }
+    .flag { width: 120px; margin: 10px auto; }
+    .option { display:block; margin:8px auto; padding:10px 20px; border:1px solid #333; border-radius:8px; cursor:pointer; width:200px; background:#fff; }
+    .option:hover { background:#e0f7fa; }
+    #leaderboard { margin-top:20px; }
+    table { border-collapse: collapse; margin:0 auto; }
+    th, td { border:1px solid #555; padding:8px 12px; }
   </style>
 </head>
 <body>
   <h1>나라-수도 맞추기 게임</h1>
 
-  <!-- 에러 메시지 -->
-  <div id="error"></div>
-
-  <!-- 플레이어 선택 화면 -->
+  <!-- 참가자 선택 -->
   <div id="player-select">
-    <h2>플레이어를 선택하세요</h2>
-    <div>
-      <button onclick="selectPlayer('신준열')">신준열</button>
-      <button onclick="selectPlayer('신규열')">신규열</button>
-      <button onclick="selectPlayer('파닥이')">파닥이</button>
-      <button onclick="selectPlayer('수박이')">수박이</button>
-    </div>
-    <p>직접 입력:</p>
-    <input type="text" id="custom-name" placeholder="이름 입력" />
-    <button onclick="selectCustomPlayer()">확인</button>
+    <h3>플레이어 선택</h3>
+    <select id="presetPlayer">
+      <option value="">직접 입력</option>
+      <option>신준열</option>
+      <option>신규열</option>
+      <option>파닥이</option>
+      <option>수박이</option>
+    </select>
+    <input type="text" id="customPlayer" placeholder="이름 입력">
+    <button onclick="startGame()">시작</button>
   </div>
 
-  <!-- 게임 화면 -->
+  <!-- 게임 영역 -->
   <div id="game">
-    <h2 id="country-name"></h2>
-    <img id="flag" alt="국기" />
-    <div class="choices" id="choices"></div>
-    <div id="result"></div>
-    <button onclick="nextQuestion()">다음 문제</button>
+    <h3 id="qnum"></h3>
+    <img id="flag" class="flag">
+    <h2 id="question"></h2>
+    <div id="options"></div>
   </div>
 
-  <!-- 결과 화면 -->
-  <div id="result-screen">
-    <h2>게임 결과</h2>
-    <p id="summary"></p>
-    <div id="rankings"></div>
-    <button onclick="restart()">다시 시작</button>
+  <!-- 결과 -->
+  <div id="result">
+    <h2 id="finalMsg"></h2>
+    <div id="leaderboard"></div>
   </div>
 
   <script>
     let countries = [];
-    let correctCapital = "";
+    let currentQuestion = 0;
     let score = 0;
-    let questionCount = 0;
-    let playerName = "";
+    let selectedPlayer = "";
     let startTime;
-    let rankings = [];
+    let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
 
-    async function loadData() {
-      try {
-        const res = await fetch("countries.json");
-        if (!res.ok) throw new Error("countries.json 불러오기 실패");
-        countries = await res.json();
-      } catch (err) {
-        document.getElementById("error").textContent = "⚠️ 데이터를 불러오지 못했습니다. 로컬 서버에서 실행하세요.";
-        console.error(err);
-      }
-    }
+    // JSON 불러오기
+    fetch("./countries.json")
+      .then(res => {
+        if (!res.ok) throw new Error("HTTP 상태 " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        countries = data;
+        console.log("로드 성공:", countries.length, "개 국가");
+      })
+      .catch(err => console.error("로드 실패:", err));
 
-    function selectPlayer(name) {
-      playerName = name;
-      startGame();
-    }
-
-    function selectCustomPlayer() {
-      const name = document.getElementById("custom-name").value.trim();
-      if (name) {
-        playerName = name;
-        startGame();
-      }
-    }
-
+    // 참가자 선택 후 시작
     function startGame() {
-      if (countries.length === 0) {
-        alert("데이터가 로드되지 않았습니다.");
+      let preset = document.getElementById("presetPlayer").value;
+      let custom = document.getElementById("customPlayer").value.trim();
+      selectedPlayer = preset || custom;
+      if (!selectedPlayer) {
+        alert("플레이어 이름을 선택하거나 입력하세요!");
         return;
       }
+
       document.getElementById("player-select").style.display = "none";
       document.getElementById("game").style.display = "block";
+
       score = 0;
-      questionCount = 0;
+      currentQuestion = 0;
       startTime = new Date();
-      newQuestion();
+      nextQuestion();
     }
 
-    function newQuestion() {
-      document.getElementById("result").textContent = "";
-      const country = countries[Math.floor(Math.random() * countries.length)];
-      correctCapital = country.capital_ko || country.capital_en;
-      if (!correctCapital) { newQuestion(); return; } // 수도 없는 나라는 건너뛰기
-
-      document.getElementById("country-name").textContent = country.country_ko;
-      document.getElementById("flag").src = country.flag;
-
-      let wrongChoices = [];
-      while (wrongChoices.length < 4) {
-        const rand = countries[Math.floor(Math.random() * countries.length)];
-        const cap = rand.capital_ko || rand.capital_en;
-        if (cap && cap !== correctCapital && !wrongChoices.includes(cap)) {
-          wrongChoices.push(cap);
-        }
+    // 다음 문제
+    function nextQuestion() {
+      if (currentQuestion >= 10) {
+        endGame();
+        return;
       }
+      currentQuestion++;
 
-      const allChoices = [correctCapital, ...wrongChoices];
-      shuffle(allChoices);
+      let q = countries[Math.floor(Math.random() * countries.length)];
+      let options = [q.capital_ko];
+      while (options.length < 5) {
+        let opt = countries[Math.floor(Math.random() * countries.length)].capital_ko;
+        if (!options.includes(opt) && opt) options.push(opt);
+      }
+      options = options.sort(() => Math.random() - 0.5);
 
-      const choicesDiv = document.getElementById("choices");
-      choicesDiv.innerHTML = "";
-      allChoices.forEach(choice => {
-        const btn = document.createElement("button");
-        btn.textContent = choice;
-        btn.onclick = () => checkAnswer(choice);
-        choicesDiv.appendChild(btn);
+      document.getElementById("qnum").innerText = `문제 ${currentQuestion}/10`;
+      document.getElementById("flag").src = q.flag;
+      document.getElementById("question").innerText = `${q.country_ko}의 수도는?`;
+
+      let optionsDiv = document.getElementById("options");
+      optionsDiv.innerHTML = "";
+      options.forEach(opt => {
+        let btn = document.createElement("button");
+        btn.className = "option";
+        btn.innerText = opt;
+        btn.onclick = () => {
+          if (opt === q.capital_ko) score++;
+          nextQuestion();
+        };
+        optionsDiv.appendChild(btn);
       });
     }
 
-    function checkAnswer(choice) {
-      if (choice === correctCapital) {
-        score++;
-        document.getElementById("result").textContent = "✅ 정답!";
-        document.getElementById("result").style.color = "green";
-      } else {
-        document.getElementById("result").textContent = "❌ 오답!";
-        document.getElementById("result").style.color = "red";
-      }
-    }
-
-    function nextQuestion() {
-      questionCount++;
-      if (questionCount >= 10) {
-        endGame();
-      } else {
-        newQuestion();
-      }
-    }
-
+    // 게임 종료
     function endGame() {
       document.getElementById("game").style.display = "none";
-      document.getElementById("result-screen").style.display = "block";
-      const endTime = new Date();
-      const timeTaken = ((endTime - startTime) / 1000).toFixed(1);
+      document.getElementById("result").style.display = "block";
 
-      const accuracy = ((score / 10) * 100).toFixed(0);
-      const playerResult = { name: playerName, score, accuracy, time: parseFloat(timeTaken) };
+      let timeTaken = (new Date() - startTime) / 1000;
+      let accuracy = Math.round((score / 10) * 100);
 
-      rankings.push(playerResult);
-      rankings.sort((a, b) => b.score - a.score || a.time - b.time);
-      rankings = rankings.slice(0, 10);
-
-      const summary = `${playerName}님, 10문제 중 ${score}개 정답 (${accuracy}%), 소요 시간 ${timeTaken}초`;
-      document.getElementById("summary").textContent = summary;
-
-      let rankingText = "<h3>🏆 순위표</h3><ol>";
-      rankings.forEach((r, i) => {
-        rankingText += `<li>${i+1}위 - ${r.name} (${r.score}/10, ${r.accuracy}%, ${r.time}초)</li>`;
+      leaderboard.push({
+        name: selectedPlayer,
+        score: score,
+        accuracy: accuracy,
+        time: timeTaken
       });
-      rankingText += "</ol>";
-      document.getElementById("rankings").innerHTML = rankingText;
 
-      const myRank = rankings.findIndex(r => r.name === playerName && r.score === score && r.time === parseFloat(timeTaken)) + 1;
-      if (myRank > 0 && myRank <= 10) {
-        document.getElementById("rankings").innerHTML += `<p>🎉 축하합니다! ${myRank}위입니다!!</p>`;
-      } else {
-        document.getElementById("rankings").innerHTML += `<p>😢 아쉽네요... 분발하세요!!</p>`;
-      }
+      leaderboard.sort((a, b) => b.accuracy - a.accuracy || a.time - b.time);
+      leaderboard = leaderboard.slice(0, 10);
+
+      localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+
+      let rank = leaderboard.findIndex(p => p.name === selectedPlayer && p.score === score && p.time === timeTaken) + 1;
+      let msg = rank > 0 && rank <= 10
+        ? `축하합니다! ${rank}위입니다!!`
+        : "아쉽네요... 분발하세요!!";
+
+      document.getElementById("finalMsg").innerText = `${selectedPlayer}님의 점수: ${score}/10 (${accuracy}%), 시간: ${timeTaken.toFixed(1)}초\n${msg}`;
+
+      renderLeaderboard();
     }
 
-    function restart() {
-      document.getElementById("result-screen").style.display = "none";
-      document.getElementById("player-select").style.display = "block";
+    function renderLeaderboard() {
+      let html = "<h3>🏆 순위표 (Top 10)</h3><table><tr><th>순위</th><th>이름</th><th>정답수</th><th>정답률</th><th>시간(초)</th></tr>";
+      leaderboard.forEach((p, i) => {
+        html += `<tr><td>${i + 1}</td><td>${p.name}</td><td>${p.score}/10</td><td>${p.accuracy}%</td><td>${p.time.toFixed(1)}</td></tr>`;
+      });
+      html += "</table>";
+      document.getElementById("leaderboard").innerHTML = html;
     }
-
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
-
-    loadData();
   </script>
 </body>
 </html>

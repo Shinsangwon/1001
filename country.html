@@ -1,199 +1,322 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>세계 나라 퀴즈 게임</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: "Comic Sans MS", "Arial Rounded MT Bold", Arial, sans-serif;
-      text-align: center;
-      margin: 0; padding: 0;
-      background: linear-gradient(135deg, #ffe6e6, #e6f7ff, #e6ffe6);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-      color: #333;
-    }
-    @keyframes gradientBG {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    h1 { font-size: 1.8em; margin: 15px; }
-    h2, h3 { margin: 10px; }
-    #game, #result, #feedback, #mode-select { display: none; }
-    .flag {
-      width: 120px; max-width: 50vw;
-      margin: 10px auto; border: 3px solid #fff; border-radius: 12px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-    }
-    .option, .playerBtn, .modeBtn, #nextBtn, .homeBtn {
-      display:block; margin:10px auto; padding:12px;
-      border:none; border-radius:18px; cursor:pointer;
-      width:80%; max-width:300px; font-size:1em;
-      background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.15);
-      transition:0.2s;
-    }
-    .option:hover, .playerBtn:hover, .modeBtn:hover, #nextBtn:hover, .homeBtn:hover {
-      transform: scale(1.05);
-    }
-    .playerBtn { background:#e6f2ff; }
-    .modeBtn { background:#ffe6f2; }
-    .homeBtn { background:#fce4ec; }
-    .option img { width:100px; height:auto; border-radius:10px; }
-    #feedback { font-size:1.1em; font-weight:bold; }
-    #nextBtn { background:#d1f0d1; }
-    table { border-collapse: collapse; margin:15px auto; background:#fff; border-radius:10px; overflow:hidden; }
-    th, td { border:1px solid #ddd; padding:8px; font-size:0.9em; }
-    th { background:#f9f9f9; }
-  </style>
-</head>
-<body>
-  <h1>🌍 세계 나라 퀴즈 🌈</h1>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>간체/번체 변환 · 구두점 변환 · 한문 배열 비교</title>
 
-  <!-- 참가자 선택 -->
-  <div id="player-select">
-    <h3>플레이어 선택</h3>
-    <div>
-      <button class="playerBtn" onclick="selectPresetPlayer('신준열')">신준열</button>
-      <button class="playerBtn" onclick="selectPresetPlayer('신규열')">신규열</button>
-      <button class="playerBtn" onclick="selectPresetPlayer('파닥이')">파닥이</button>
-      <button class="playerBtn" onclick="selectPresetPlayer('수박이')">수박이</button>
-    </div>
-    <p>또는 직접 입력:</p>
-    <input type="text" id="customPlayer" placeholder="이름 입력">
-    <button onclick="confirmPlayer()">다음</button>
+<!-- OpenCC-JS -->
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
+
+<style>
+  body { max-width: 960px; margin: 32px auto; padding: 0 16px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans CJK KR", "Apple SD Gothic Neo", sans-serif; }
+  h1 { font-size: 1.6rem; margin-bottom: .5rem; }
+  h2 { font-size: 1.3rem; margin-top: 2rem; }
+  .row { margin: 10px 0; }
+  select, button { font-size: 1rem; padding: 6px 10px; }
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .hint { color: #666; font-size: .9rem; margin-top: 4px; }
+  .box { border: 1px solid #ddd; background: #fff; box-sizing: border-box; width: 100%; }
+  .editable, .out, textarea { min-height: 140px; padding: 10px; font-size: 1rem; line-height: 1.6; width: 100%; }
+  .editable { outline: none; white-space: pre-wrap; }
+  .out { background: #f7f7f8; white-space: pre-wrap; overflow-x: auto; position: relative; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  .changed { background: #fff59d; }
+  .will-change { background: #e1f5fe; }
+
+  /* 복사 아이콘 버튼 */
+  .copy-btn {
+    position: absolute; top: 6px; right: 6px;
+    border: none; background: transparent; cursor: pointer; padding: 2px;
+  }
+  .copy-btn svg { width: 20px; height: 20px; fill: #555; }
+  .copy-btn:hover svg { fill: #000; }
+
+  /* 비교 강조 */
+  .diff { background: #ffcdd2; color: #c62828; font-weight: bold; }
+  .stats { margin-top: 8px; font-size: 1rem; color: #222; }
+
+  /* 3번: 입력창 음영 미러링 */
+  .highlight-container { position: relative; width: 100%; }
+  .highlight-input {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: transparent; color: transparent;  /* 텍스트 투명 처리 */
+    caret-color: black;                           /* 커서 보이게 */
+    border: 1px solid #ddd;
+    padding: 10px;
+    font-family: inherit; font-size: 1rem; line-height: 1.6;
+    resize: none; white-space: pre-wrap; overflow: auto;
+  }
+  .highlight-mirror {
+    white-space: pre-wrap; word-break: break-word;
+    font-family: inherit; font-size: 1rem; line-height: 1.6;
+    color: black; padding: 10px; border: 1px solid #ddd;
+    min-height: 140px; pointer-events: none;     /* 클릭 안됨 */
+    overflow: hidden;                             /* 스크롤은 숨기고 JS로만 이동 */
+  }
+</style>
+
+<h1>간체/번체 변환 · 구두점 변환 · 한문 배열 비교</h1>
+
+<!-- 섹션 1: 간체/번체 변환 -->
+<h2>1. 간체/번체 변환</h2>
+<div class="row">
+  <div class="toolbar">
+    <label for="mode"><strong>변환 모드:</strong></label>
+    <select id="mode">
+      <option value="cn>t">간체 → 번체(표준)</option>
+      <option value="t>cn">번체(표준) → 간체</option>
+      <option value="cn>tw">간체 → 번체(대만)</option>
+      <option value="cn>twp">간체 → 번체(대만·어휘)</option>
+      <option value="cn>hk">간체 → 번체(홍콩)</option>
+      <option value="tw>cn">번체(대만) → 간체</option>
+      <option value="hk>cn">번체(홍콩) → 간체</option>
+    </select>
+    <button id="clear1">지우기</button>
   </div>
+</div>
 
-  <!-- 모드 선택 -->
-  <div id="mode-select">
-    <h3>게임 모드를 선택하세요</h3>
-    <button class="modeBtn" onclick="startGame(1)">1️⃣ 나라 → 수도 맞추기</button>
-    <button class="modeBtn" onclick="startGame(2)">2️⃣ 국기 → 나라 맞추기</button>
-    <button class="modeBtn" onclick="startGame(3)">3️⃣ 나라 → 국기 맞추기</button>
-    <button class="homeBtn" onclick="goHome()">🏠 처음으로</button>
+<div class="row">
+  <label><strong>입력:</strong></label>
+  <div id="input1" class="editable box mono" contenteditable="true" spellcheck="false"></div>
+  <div id="count1" class="hint"></div>
+</div>
+
+<div class="row" style="position: relative;">
+  <label><strong>출력:</strong></label>
+  <div id="output1" class="out box mono"></div>
+  <button id="copy1" class="copy-btn" title="복사">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M10 1.5v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1A.5.5 0 0 1 6.5 1h3a.5.5 0 0 1 .5.5z"/></svg>
+  </button>
+</div>
+
+<!-- 섹션 2: 구두점 변환 -->
+<h2>2. 구두점 변환</h2>
+<div class="row">
+  <div class="toolbar">
+    <button id="clear2">지우기</button>
   </div>
+</div>
 
-  <!-- 게임 영역 -->
-  <div id="game">
-    <button class="homeBtn" onclick="goHome()">🏠 처음으로</button>
-    <h3 id="qnum"></h3>
-    <div id="questionArea"></div>
-    <div id="options"></div>
+<div class="row">
+  <label><strong>입력:</strong></label>
+  <textarea id="input2" class="box" placeholder="예: 你好，世界。发展头发？"></textarea>
+  <div id="count2" class="hint"></div>
+</div>
+
+<div class="row" style="position: relative;">
+  <label><strong>출력:</strong></label>
+  <textarea id="output2" class="out box" readonly></textarea>
+  <button id="copy2" class="copy-btn" title="복사">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M10 1.5v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1A.5.5 0 0 1 6.5 1h3a.5.5 0 0 1 .5.5z"/></svg>
+  </button>
+</div>
+
+<!-- 섹션 3: 한문 배열 비교 (입력창에서도 음영 표기) -->
+<h2>3. 한문 배열 비교</h2>
+<p class="hint">공백 및 한자 외 문자는 무시합니다. 두 문장의 한자 배열 순서와 동일성을 비교합니다.</p>
+
+<div class="row">
+  <label><strong>문장 A:</strong></label>
+  <div class="highlight-container">
+    <textarea id="input3a" class="highlight-input" placeholder="예: 生死有命 富貴在天"></textarea>
+    <div id="mirror3a" class="highlight-mirror"></div>
   </div>
-
-  <!-- 정답 피드백 -->
-  <div id="feedback">
-    <button class="homeBtn" onclick="goHome()">🏠 처음으로</button>
-    <p id="feedbackMsg"></p>
-    <button id="nextBtn" onclick="nextQuestion()">다음 문제</button>
+</div>
+<div class="row">
+  <label><strong>문장 B:</strong></label>
+  <div class="highlight-container">
+    <textarea id="input3b" class="highlight-input" placeholder="예: 死生有命 貴富在天"></textarea>
+    <div id="mirror3b" class="highlight-mirror"></div>
   </div>
+</div>
 
-  <!-- 결과 -->
-  <div id="result">
-    <button class="homeBtn" onclick="goHome()">🏠 처음으로</button>
-    <h2 id="finalMsg"></h2>
-    <div id="leaderboard"></div>
-  </div>
+<div class="row">
+  <label><input type="checkbox" id="ignoreVariants"> 간체/번체 차이 무시</label>
+</div>
 
-  <script>
-    let countries = [];
-    let currentQuestion = 0, score = 0;
-    let selectedPlayer = "", startTime, gameMode = 1;
-    let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
-    let currentQ;
+<div class="row" style="position: relative;">
+  <label><strong>비교 결과:</strong></label>
+  <div id="output3" class="out box mono" style="font-size:1.2rem; line-height:1.8;"></div>
+</div>
 
-    fetch("https://shinsangwon.github.io/1001/countries.json")
-      .then(res => res.json())
-      .then(data => { countries = data; })
-      .catch(err => console.error("로드 실패:", err));
+<script>
+  /* ========== 공통 유틸 ========== */
+  function escapeHTML(str){
+    return str.replaceAll(/&/g,"&amp;").replaceAll(/</g,"&lt;").replaceAll(/>/g,"&gt;");
+  }
+  function getEditableText(el){ return (el.innerText||"").replace(/\u00A0/g,""); }
+  function countHanja(text){
+    try { const re=/\p{Script=Han}/gu; return (text.match(re)||[]).length; }
+    catch { const re2=/[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/g; return (text.match(re2)||[]).length; }
+  }
 
-    function selectPresetPlayer(name){ selectedPlayer=name; document.getElementById("customPlayer").value=""; confirmPlayer(); }
-    function confirmPlayer(){
-      if(!selectedPlayer) selectedPlayer=document.getElementById("customPlayer").value.trim();
-      if(!selectedPlayer){ alert("플레이어 이름을 입력하거나 선택하세요!"); return; }
-      document.getElementById("player-select").style.display="none";
-      document.getElementById("mode-select").style.display="block";
-    }
-
-    function startGame(mode){
-      gameMode=mode; score=0; currentQuestion=0;
-      startTime=Date.now();
-      document.getElementById("mode-select").style.display="none";
-      document.getElementById("result").style.display="none";
-      document.getElementById("game").style.display="block";
-      nextQuestion();
-    }
-
-    function nextQuestion(){
-      document.getElementById("feedback").style.display="none";
-      if(currentQuestion>=10){ endGame(); return; }
-      currentQ=countries[Math.floor(Math.random()*countries.length)];
-      currentQuestion++;
-      document.getElementById("qnum").textContent=`문제 ${currentQuestion}/10`;
-      const qArea=document.getElementById("questionArea"), optsDiv=document.getElementById("options");
-      qArea.innerHTML=""; optsDiv.innerHTML="";
-
-      if(gameMode===1){
-        qArea.innerHTML=`<h2>${currentQ.continent_ko}에 있는 ${currentQ.country_ko}의 수도는?</h2><img class="flag" src="${currentQ.flag}">`;
-        let options=[currentQ.capital_ko];
-        while(options.length<5){ let opt=countries[Math.floor(Math.random()*countries.length)].capital_ko; if(opt && !options.includes(opt)) options.push(opt); }
-        options.sort(()=>Math.random()-0.5);
-        options.forEach(opt=>{ let btn=document.createElement("button"); btn.className="option"; btn.textContent=opt; btn.onclick=()=>checkAnswer(opt===currentQ.capital_ko); optsDiv.appendChild(btn); });
-      }
-      else if(gameMode===2){
-        qArea.innerHTML=`<h2>이 국기는 어느 나라일까요?</h2><img class="flag" src="${currentQ.flag}">`;
-        let options=[currentQ.country_ko];
-        while(options.length<5){ let opt=countries[Math.floor(Math.random()*countries.length)].country_ko; if(opt && !options.includes(opt)) options.push(opt); }
-        options.sort(()=>Math.random()-0.5);
-        options.forEach(opt=>{ let btn=document.createElement("button"); btn.className="option"; btn.textContent=opt; btn.onclick=()=>checkAnswer(opt===currentQ.country_ko); optsDiv.appendChild(btn); });
-      }
-      else if(gameMode===3){
-        qArea.innerHTML=`<h2>${currentQ.continent_ko}에 있는 ${currentQ.country_ko}의 국기는?</h2>`;
-        let options=[currentQ.flag];
-        while(options.length<5){ let opt=countries[Math.floor(Math.random()*countries.length)].flag; if(opt && !options.includes(opt)) options.push(opt); }
-        options.sort(()=>Math.random()-0.5);
-        options.forEach(opt=>{ let btn=document.createElement("button"); btn.className="option"; btn.innerHTML=`<img src="${opt}" style="width:100px;">`; btn.onclick=()=>checkAnswer(opt===currentQ.flag); optsDiv.appendChild(btn); });
-      }
-    }
-
-    function checkAnswer(correct){
-      document.getElementById("game").style.display="none";
-      document.getElementById("feedback").style.display="block";
-      let msg=document.getElementById("feedbackMsg");
-      if(correct){ score++; msg.textContent="✅ 정답입니다!"; msg.style.color="green"; }
-      else {
-        let correctTxt=(gameMode===1?currentQ.capital_ko:(gameMode===2?currentQ.country_ko:"해당 국기"));
-        msg.textContent=`❌ 오답! 정답은 ${correctTxt} 입니다.`; msg.style.color="red";
+  /* LCS 기반 diff (코드포인트 단위) */
+  function diffByLCS(aArr,bArr){
+    const n=aArr.length, m=bArr.length;
+    const dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
+    for(let i=n-1;i>=0;i--){
+      for(let j=m-1;j>=0;j--){
+        dp[i][j]=(aArr[i]===bArr[j]) ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
       }
     }
+    const ops=[]; let i=0,j=0;
+    while(i<n && j<m){
+      if(aArr[i]===bArr[j]){push('equal',aArr[i]); i++; j++;}
+      else if(dp[i+1][j] >= dp[i][j+1]){push('delete',aArr[i]); i++;}
+      else {push('insert',bArr[j]); j++;}
+    }
+    while(i<n){push('delete',aArr[i]); i++;}
+    while(j<m){push('insert',bArr[j]); j++;}
+    return {ops, lcs: dp[0][0]};
+    function push(type,ch){const last=ops[ops.length-1]; if(last&&last.type===type) last.chars.push(ch); else ops.push({type,chars:[ch]});}
+  }
 
-    function endGame(){
-      document.getElementById("game").style.display="none";
-      document.getElementById("feedback").style.display="none";
-      document.getElementById("result").style.display="block";
-      let time=Math.floor((Date.now()-startTime)/1000);
-      let accuracy=Math.round((score/10)*100);
-      leaderboard.push({name:selectedPlayer, score, time});
-      leaderboard.sort((a,b)=>b.score-a.score||a.time-b.time);
-      leaderboard=leaderboard.slice(0,10);
-      localStorage.setItem("leaderboard",JSON.stringify(leaderboard));
-      let rank=leaderboard.findIndex(p=>p.name===selectedPlayer&&p.score===score&&p.time===time)+1;
-      let msg=(rank>0&&rank<=10)?`축하합니다! ${rank}위입니다!!`:"아쉽네요... 분발하세요!!";
-      document.getElementById("finalMsg").textContent=`${selectedPlayer}님의 점수: ${score}/10 (${accuracy}%), 소요시간 ${time}초\n${msg}`;
-      let html="<h3>🏆 순위표</h3><table><tr><th>순위</th><th>이름</th><th>점수</th><th>시간</th></tr>";
-      leaderboard.forEach((p,i)=>{ html+=`<tr><td>${i+1}</td><td>${p.name}</td><td>${p.score}</td><td>${p.time}</td></tr>`; });
-      html+="</table>"; document.getElementById("leaderboard").innerHTML=html;
+  /* ========== 1) 간/번체 변환 (구두점 변환 없음) ========== */
+  const modeSelect=document.getElementById('mode');
+  const input1=document.getElementById('input1');
+  const output1=document.getElementById('output1');
+  const clear1=document.getElementById('clear1');
+  const copy1=document.getElementById('copy1');
+  const count1=document.getElementById('count1');
+  let converter=null;
+
+  function parseMode(m){ const [from,to]=m.split('>'); return {from,to}; }
+  function createConverter(){ const {from,to}=parseMode(modeSelect.value); converter=OpenCC.Converter({from,to}); }
+
+  function renderHighlightedHTML(original, converted){
+    const a=Array.from(original), b=Array.from(converted);
+    const {ops}=diffByLCS(a,b);
+    let inputHTML='', outputHTML='';
+    for(const op of ops){
+      if(op.type==='equal'){const s=escapeHTML(op.chars.join('')); inputHTML+=s; outputHTML+=s;}
+      else if(op.type==='delete'){inputHTML+=`<span class="will-change">${escapeHTML(op.chars.join(''))}</span>`;}
+      else if(op.type==='insert'){outputHTML+=`<span class="changed">${escapeHTML(op.chars.join(''))}</span>`;}
+    }
+    return {inputHTML, outputHTML};
+  }
+
+  function updateSection1(){
+    if(!converter) createConverter();
+    const original=getEditableText(input1);
+    let converted='';
+    try { converted=converter(original); }
+    catch(e){ output1.innerHTML=`<span>[오류] ${escapeHTML(String(e))}</span>`; return; }
+    const {inputHTML, outputHTML}=renderHighlightedHTML(original, converted);
+    input1.innerHTML=inputHTML||'';
+    output1.innerHTML=outputHTML||'';
+    count1.textContent=`한자 개수(입력 기준): ${countHanja(original)}`;
+  }
+  modeSelect.addEventListener('change',()=>{ createConverter(); updateSection1(); });
+  let composing=false;
+  input1.addEventListener('compositionstart',()=>composing=true);
+  input1.addEventListener('compositionend',()=>{ composing=false; updateSection1(); });
+  input1.addEventListener('input',()=>{ if(!composing) updateSection1(); });
+  clear1.addEventListener('click',()=>{ input1.innerHTML=''; output1.innerHTML=''; count1.textContent=''; });
+  copy1.addEventListener('click',async()=>{ await navigator.clipboard.writeText(output1.innerText||''); });
+  createConverter();
+
+  /* ========== 2) 구두점 변환만 ========== */
+  const punctMap={"。":". ","，":", ","？":"? ","！":"! ","：":": ","；":"; ","（":"( ","）":") ","【":"[ ","】":"] ","“":'"',"”":'" ',"‘":"'","’":"' ","、":", ","∶":": "};
+  function convertPunctuation(t){ return t.replace(/[。，？！：；（）【】“”‘’、∶]/g, m => punctMap[m] || m); }
+  const input2=document.getElementById('input2'), output2=document.getElementById('output2'),
+        clear2=document.getElementById('clear2'), copy2=document.getElementById('copy2'),
+        count2=document.getElementById('count2');
+  function updateSection2(){
+    const text=input2.value||'';
+    output2.value=convertPunctuation(text);
+    count2.textContent=`한자 개수(입력 기준): ${countHanja(text)}`;
+  }
+  input2.addEventListener('input',updateSection2);
+  clear2.addEventListener('click',()=>{ input2.value=''; output2.value=''; count2.textContent=''; });
+  copy2.addEventListener('click',async()=>{ await navigator.clipboard.writeText(output2.value||''); });
+
+  /* ========== 3) 한문 배열 비교 (입력창에도 음영 표시: 미러링) ========== */
+  const input3a=document.getElementById('input3a');
+  const input3b=document.getElementById('input3b');
+  const mirror3a=document.getElementById('mirror3a');
+  const mirror3b=document.getElementById('mirror3b');
+  const output3=document.getElementById('output3');
+  const ignoreVariants=document.getElementById('ignoreVariants');
+  const toCN=OpenCC.Converter({from:"t",to:"cn"});
+
+  function extractHanja(text){
+    try { return (text.match(/\p{Script=Han}/gu) || []); }
+    catch { return (text.match(/[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/g) || []); }
+  }
+
+  function compareHanjaArrays(aArr,bArr){
+    const n=aArr.length, m=bArr.length;
+    const dp=Array.from({length:n+1},()=>Array(m+1).fill(0));
+    for(let i=n-1;i>=0;i--){
+      for(let j=m-1;j>=0;j--){
+        dp[i][j]=(aArr[i]===bArr[j]) ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+      }
+    }
+    const ops=[]; let i=0, j=0;
+    while(i<n && j<m){
+      if(aArr[i]===bArr[j]){push('equal',aArr[i]); i++; j++;}
+      else if(dp[i+1][j] >= dp[i][j+1]){push('delete',aArr[i]); i++;}
+      else {push('insert',bArr[j]); j++;}
+    }
+    while(i<n){push('delete',aArr[i]); i++;}
+    while(j<m){push('insert',bArr[j]); j++;}
+    return {ops, lcs: dp[0][0]};
+    function push(type,ch){const last=ops[ops.length-1]; if(last&&last.type===type) last.chars.push(ch); else ops.push({type,chars:[ch]});}
+  }
+
+  function renderComparison(aText,bText){
+    let aArr=extractHanja(aText), bArr=extractHanja(bText);
+    if(ignoreVariants.checked){
+      aArr=aArr.map(ch=>toCN(ch));
+      bArr=bArr.map(ch=>toCN(ch));
+    }
+    const {ops, lcs}=compareHanjaArrays(aArr,bArr);
+
+    let resA='', resB='';
+    for(const op of ops){
+      if(op.type==='equal'){ const s=escapeHTML(op.chars.join('')); resA+=s; resB+=s; }
+      else if(op.type==='delete'){ resA+=`<span class="diff">${escapeHTML(op.chars.join(''))}</span>`; }
+      else if(op.type==='insert'){ resB+=`<span class="diff">${escapeHTML(op.chars.join(''))}</span>`; }
     }
 
-    function goHome(){
-      selectedPlayer=""; gameMode=1;
-      document.getElementById("player-select").style.display="block";
-      document.getElementById("mode-select").style.display="none";
-      document.getElementById("game").style.display="none";
-      document.getElementById("feedback").style.display="none";
-      document.getElementById("result").style.display="none";
-    }
-  </script>
-</body>
+    const totalA=aArr.length, totalB=bArr.length;
+    const maxLen=Math.max(totalA,totalB) || 1;
+    const sameRatio=(lcs/maxLen*100).toFixed(1);
+    const diffCount=(totalA+totalB) - (2*lcs);
+
+    const stats=`<div class="stats">
+      문장 A 한자 수: ${totalA} | 문장 B 한자 수: ${totalB}<br>
+      동일률: ${sameRatio}% | 다른 글자 수: ${diffCount} | LCS 길이: ${lcs}
+    </div>`;
+
+    return {resA, resB, stats};
+  }
+
+  function updateSection3(){
+    const a=input3a.value||'';
+    const b=input3b.value||'';
+    const {resA,resB,stats}=renderComparison(a,b);
+    mirror3a.innerHTML = resA || '';
+    mirror3b.innerHTML = resB || '';
+    output3.innerHTML  = `<div><strong>A:</strong> ${resA}</div><div><strong>B:</strong> ${resB}</div>${stats}`;
+  }
+
+  // 스크롤 동기화 (텍스트area 스크롤을 미러에 반영)
+  function syncScroll(src, dst){ dst.scrollTop = src.scrollTop; dst.scrollLeft = src.scrollLeft; }
+  input3a.addEventListener('scroll', ()=>syncScroll(input3a, mirror3a));
+  input3b.addEventListener('scroll', ()=>syncScroll(input3b, mirror3b));
+
+  // 입력/옵션 변경 시 갱신
+  [input3a, input3b].forEach(el=>{
+    el.addEventListener('input', updateSection3);
+    el.addEventListener('change', updateSection3);
+  });
+  ignoreVariants.addEventListener('change', updateSection3);
+
+  // 초기 렌더
+  updateSection1();
+  updateSection2();
+  updateSection3();
+</script>
 </html>

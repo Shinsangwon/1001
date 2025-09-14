@@ -2,33 +2,126 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>나라-수도 맞추기 게임</title>
+  <title>나라-수도 맞추기 게임1.0</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; background:#f0f8ff; }
+    body {
+      font-family: "Comic Sans MS", "Arial Rounded MT Bold", Arial, sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, #ffe6e6, #e6f7ff, #e6ffe6);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #333;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    h1 {
+      font-size: 2.2em;
+      color: #444;
+      margin-top: 20px;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+    }
     #game, #result, #feedback { display: none; }
-    .flag { width: 120px; margin: 10px auto; }
-    .option { display:block; margin:8px auto; padding:10px 20px; border:1px solid #333; border-radius:8px; cursor:pointer; width:200px; background:#fff; }
-    .option:hover { background:#e0f7fa; }
-    #leaderboard { margin-top:20px; }
-    table { border-collapse: collapse; margin:0 auto; }
-    th, td { border:1px solid #555; padding:8px 12px; }
-    #feedback { margin-top:20px; font-size:1.2em; }
-    #nextBtn { margin-top:15px; padding:8px 16px; }
+    .flag {
+      width: 140px;
+      margin: 10px auto;
+      border: 4px solid #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .option {
+      display:block;
+      margin:10px auto;
+      padding:12px 20px;
+      border:none;
+      border-radius:20px;
+      cursor:pointer;
+      width:220px;
+      background:#fff7e6;
+      font-size:1.1em;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: 0.2s;
+    }
+    .option:hover {
+      background:#ffe0b3;
+      transform: scale(1.05);
+    }
+    .playerBtn {
+      margin:6px;
+      padding:12px 20px;
+      border:none;
+      border-radius:20px;
+      cursor:pointer;
+      background:#e6f2ff;
+      font-size:1em;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      transition:0.2s;
+    }
+    .playerBtn:hover { background:#cce0ff; transform: scale(1.05); }
+    input {
+      padding:8px 12px;
+      border-radius:15px;
+      border:1px solid #ccc;
+      margin-top:10px;
+    }
+    button {
+      font-family: inherit;
+    }
+    #leaderboard {
+      margin-top:20px;
+    }
+    table {
+      border-collapse: collapse;
+      margin:0 auto;
+      background:#fff;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    th, td {
+      border:1px solid #ddd;
+      padding:10px 15px;
+    }
+    th {
+      background:#f9f9f9;
+    }
+    #feedback {
+      margin-top:20px;
+      font-size:1.2em;
+      font-weight:bold;
+      color:#444;
+    }
+    #nextBtn {
+      margin-top:15px;
+      padding:10px 18px;
+      border:none;
+      border-radius:20px;
+      background:#d1f0d1;
+      cursor:pointer;
+      font-size:1em;
+      transition:0.2s;
+    }
+    #nextBtn:hover {
+      background:#aee6ae;
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
-  <h1>나라-수도 맞추기 게임0.5</h1>
+  <h1>🌍 나라-수도 맞추기 게임1.0 🌈</h1>
 
   <!-- 참가자 선택 -->
   <div id="player-select">
     <h3>플레이어 선택</h3>
-    <select id="presetPlayer">
-      <option value="">직접 입력</option>
-      <option>신준열</option>
-      <option>신규열</option>
-      <option>파닥이</option>
-      <option>수박이</option>
-    </select>
+    <div>
+      <button class="playerBtn" onclick="selectPresetPlayer('신준열')">신준열</button>
+      <button class="playerBtn" onclick="selectPresetPlayer('신규열')">신규열</button>
+      <button class="playerBtn" onclick="selectPresetPlayer('파닥이')">파닥이</button>
+      <button class="playerBtn" onclick="selectPresetPlayer('수박이')">수박이</button>
+    </div>
+    <p>또는 직접 입력:</p>
     <input type="text" id="customPlayer" placeholder="이름 입력">
     <button onclick="startGame()">시작</button>
   </div>
@@ -63,7 +156,7 @@
     let currentAnswer = "";
 
     // JSON 불러오기
-    fetch("./countries.json")
+    fetch("https://shinsangwon.github.io/1001/countries.json")
       .then(res => {
         if (!res.ok) throw new Error("HTTP 상태 " + res.status);
         return res.json();
@@ -74,113 +167,103 @@
       })
       .catch(err => console.error("로드 실패:", err));
 
+    // 버튼으로 미리 선택된 플레이어
+    function selectPresetPlayer(name) {
+      selectedPlayer = name;
+      document.getElementById("customPlayer").value = "";
+      startGame();
+    }
+
     // 참가자 선택 후 시작
     function startGame() {
-      let preset = document.getElementById("presetPlayer").value;
-      let custom = document.getElementById("customPlayer").value.trim();
-      selectedPlayer = preset || custom;
       if (!selectedPlayer) {
-        alert("플레이어 이름을 선택하거나 입력하세요!");
+        selectedPlayer = document.getElementById("customPlayer").value.trim();
+      }
+      if (!selectedPlayer) {
+        alert("플레이어 이름을 입력하거나 선택하세요!");
         return;
       }
-
       document.getElementById("player-select").style.display = "none";
       document.getElementById("game").style.display = "block";
-
       score = 0;
       currentQuestion = 0;
-      startTime = new Date();
+      startTime = Date.now();
       nextQuestion();
     }
 
-    // 문제 출제
     function nextQuestion() {
       document.getElementById("feedback").style.display = "none";
-
       if (currentQuestion >= 10) {
         endGame();
         return;
       }
-      currentQuestion++;
-
-      let q = countries[Math.floor(Math.random() * countries.length)];
+      const q = countries[Math.floor(Math.random() * countries.length)];
       currentAnswer = q.capital_ko;
-
-      let options = [q.capital_ko];
+      const options = [q.capital_ko];
       while (options.length < 5) {
-        let opt = countries[Math.floor(Math.random() * countries.length)].capital_ko;
-        if (!options.includes(opt) && opt) options.push(opt);
+        const rand = countries[Math.floor(Math.random() * countries.length)].capital_ko;
+        if (rand && !options.includes(rand)) options.push(rand);
       }
-      options = options.sort(() => Math.random() - 0.5);
+      options.sort(() => Math.random() - 0.5);
 
-      document.getElementById("qnum").innerText = `문제 ${currentQuestion}/10`;
+      document.getElementById("qnum").textContent = `문제 ${currentQuestion + 1}/10`;
       document.getElementById("flag").src = q.flag;
-      document.getElementById("question").innerText = `${q.country_ko}의 수도는?`;
+      document.getElementById("question").textContent = `${q.country_ko}의 수도는 어디일까요?`;
 
-      let optionsDiv = document.getElementById("options");
-      optionsDiv.innerHTML = "";
+      const optsDiv = document.getElementById("options");
+      optsDiv.innerHTML = "";
       options.forEach(opt => {
-        let btn = document.createElement("button");
+        const btn = document.createElement("button");
         btn.className = "option";
-        btn.innerText = opt;
+        btn.textContent = opt;
         btn.onclick = () => checkAnswer(opt);
-        optionsDiv.appendChild(btn);
+        optsDiv.appendChild(btn);
       });
     }
 
-    // 정답 확인
-    function checkAnswer(selected) {
-      document.getElementById("game").style.display = "none";
-      document.getElementById("feedback").style.display = "block";
-
-      if (selected === currentAnswer) {
+    function checkAnswer(choice) {
+      const feedback = document.getElementById("feedback");
+      const msg = document.getElementById("feedbackMsg");
+      if (choice === currentAnswer) {
         score++;
-        document.getElementById("feedbackMsg").innerText = `✅ 정답입니다! (${currentAnswer})`;
+        msg.textContent = "✅ 정답입니다!";
+        msg.style.color = "green";
       } else {
-        document.getElementById("feedbackMsg").innerText = `❌ 오답입니다. 정답은 "${currentAnswer}" 입니다.`;
+        msg.textContent = `❌ 오답입니다! 정답은 "${currentAnswer}" 입니다.`;
+        msg.style.color = "red";
       }
+      document.getElementById("feedback").style.display = "block";
+      currentQuestion++;
     }
 
-    // 게임 종료
     function endGame() {
       document.getElementById("game").style.display = "none";
-      document.getElementById("feedback").style.display = "none";
       document.getElementById("result").style.display = "block";
+      const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+      const accuracy = Math.round((score / 10) * 100);
 
-      let timeTaken = (new Date() - startTime) / 1000;
-      let accuracy = Math.round((score / 10) * 100);
-
-      leaderboard.push({
-        name: selectedPlayer,
-        score: score,
-        accuracy: accuracy,
-        time: timeTaken
-      });
-
-      leaderboard.sort((a, b) => b.accuracy - a.accuracy || a.time - b.time);
+      leaderboard.push({ name: selectedPlayer, score, time: timeTaken });
+      leaderboard.sort((a, b) => b.score - a.score || a.time - b.time);
       leaderboard = leaderboard.slice(0, 10);
-
       localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
 
-      let rank = leaderboard.findIndex(p => p.name === selectedPlayer && p.score === score && p.time === timeTaken) + 1;
-      let msg = rank > 0 && rank <= 10
-        ? `축하합니다! ${rank}위입니다!!`
-        : "아쉽네요... 분발하세요!!";
+      let rankMsg = "";
+      const rank = leaderboard.findIndex(e => e.name === selectedPlayer && e.score === score && e.time === timeTaken) + 1;
+      if (rank > 0 && rank <= 10) {
+        rankMsg = `축하합니다! ${rank}위입니다!!`;
+      } else {
+        rankMsg = "아쉽네요... 분발하세요!!";
+      }
 
-      document.getElementById("finalMsg").innerText =
-        `${selectedPlayer}님의 점수: ${score}/10 (${accuracy}%), 시간: ${timeTaken.toFixed(1)}초\n${msg}`;
+      document.getElementById("finalMsg").textContent =
+        `${selectedPlayer}님의 점수: ${score}/10 (${accuracy}%), 소요시간: ${timeTaken}초\n${rankMsg}`;
 
-      renderLeaderboard();
-    }
-
-    // 순위표 출력
-    function renderLeaderboard() {
-      let html = "<h3>🏆 순위표 (Top 10)</h3><table><tr><th>순위</th><th>이름</th><th>정답수</th><th>정답률</th><th>시간(초)</th></tr>";
+      let table = "<table><tr><th>순위</th><th>이름</th><th>점수</th><th>시간(초)</th></tr>";
       leaderboard.forEach((p, i) => {
-        html += `<tr><td>${i + 1}</td><td>${p.name}</td><td>${p.score}/10</td><td>${p.accuracy}%</td><td>${p.time.toFixed(1)}</td></tr>`;
+        table += `<tr><td>${i + 1}</td><td>${p.name}</td><td>${p.score}</td><td>${p.time}</td></tr>`;
       });
-      html += "</table>";
-      document.getElementById("leaderboard").innerHTML = html;
+      table += "</table>";
+      document.getElementById("leaderboard").innerHTML = table;
     }
   </script>
 </body>

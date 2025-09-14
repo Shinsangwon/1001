@@ -200,6 +200,7 @@ function checkAnswer(choice) {
   }
   html += `<button class="nav-btn" onclick="showHome()">처음으로</button>`;
   html += `</div>`;
+
   app.innerHTML = html;
 }
 
@@ -316,15 +317,18 @@ function showStudy(filter = "전체") {
   }
   const rows = [...filtered]
     .sort((a, b) => a.continent_ko.localeCompare(b.continent_ko, "ko") || a.country_ko.localeCompare(b.country_ko, "ko"))
-    .map(c => `
-      <tr>
-        <td>${c.continent_ko}</td>
-        <td><img src="${c.flag}" alt="flag" width="40"></td>
-        <td>${c.country_ko}</td>
-        <td>${c.capital_ko || ""}</td>
-      </tr>`).join("");
+    .map(c => {
+      return `
+        <tr>
+          <td>${c.continent_ko}</td>
+          <td><img src="${c.flag}" alt="flag" width="40"></td>
+          <td>${c.country_ko}</td>
+          <td>${c.capital_ko || ""}</td>
+        </tr>`;
+    })
+    .join("");
 
-  document.getElementById("app").innerHTML = `
+  const html = `
     <div class="card">
       <h2>나라-수도-국기 공부</h2>
       <div>
@@ -342,6 +346,8 @@ function showStudy(filter = "전체") {
       <button class="nav-btn" onclick="showHome()">처음으로</button>
     </div>
   `;
+
+  document.getElementById("app").innerHTML = html;
 }
 
 // ====================== 시작 ======================

@@ -1,6 +1,5 @@
-/* 기본 레이아웃 */
 body {
-  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-family: Arial, sans-serif;
   background: linear-gradient(to bottom, #fceabb, #f8b500);
   margin: 0;
   padding: 0;
@@ -16,13 +15,12 @@ body {
   padding: 20px;
 }
 
-/* 카드 스타일 */
 .card {
   background: #fff;
   border-radius: 15px;
   padding: 20px;
   margin: 10px 0;
-  box-shadow: 0 4px 10px rgba(0,0,0,.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .1);
   text-align: center;
 }
 
@@ -31,7 +29,6 @@ h1, h2, h3 {
   color: #333;
 }
 
-/* 버튼 스타일 */
 .option-btn {
   display: block;
   width: 100%;
@@ -43,6 +40,10 @@ h1, h2, h3 {
   background: #f8b500;
   color: #fff;
   cursor: pointer;
+}
+
+.option-btn:hover {
+  background: #e0a800;
 }
 
 .half-btn {
@@ -82,7 +83,6 @@ h1, h2, h3 {
   cursor: pointer;
 }
 
-/* 국기 이미지 */
 img.flag {
   width: 150px;
   border: 1px solid #ccc;
@@ -90,7 +90,6 @@ img.flag {
   border-radius: 8px;
 }
 
-/* 오답 국기 X표시 */
 .wrong-flag {
   position: relative;
   display: inline-block;
@@ -110,7 +109,6 @@ img.flag {
   justify-content: center;
 }
 
-/* 테이블 */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -128,96 +126,40 @@ th {
   color: #fff;
 }
 
-/* 입력창 */
 input[type="text"] {
   padding: 8px;
   width: 90%;
   margin: 10px 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
 }
 
-/* ===== 세계지도 퀴즈(mapQuiz.js) ===== */
+/* ===== 지도 퀴즈용 ===== */
+#mapQuizSvg {
+  touch-action: pan-x pan-y;
+}
 
-#map {
+#mapContainer {
   width: 100%;
-  height: 560px;
-  background: #e9ecef;
-  border-radius: 10px;
+  max-width: 600px;
+  margin: auto;
+  overflow: hidden;
 }
 
-.panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  margin-top: 14px;
-}
-
-.choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-  justify-content: center;
-}
-
-.choice {
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.choice.correct {
-  background: #d1ffd6;
-  border-color: #5dbb63;
-}
-
-.choice.wrong {
-  background: #ffe1e1;
-  border-color: #ff6b6b;
-}
-
-.status {
-  margin-top: 10px;
-  font-weight: 600;
-}
-
-.status.correct {
-  color: #2f9e44;
-}
-
-.status.wrong {
-  color: #c92a2a;
-}
-
-.answer-box {
-  margin-top: 10px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.answer-box img {
-  width: 40px;
-  height: auto;
-  border: 1px solid #999;
-}
-
-/* 푸터 */
-footer {
-  color: #666;
-  font-size: 12px;
-  text-align: center;
-  padding: 20px 10px;
-}
-
-.note {
-  color: #666;
-  font-size: 13px;
-  margin-top: 6px;
+@media (max-width: 600px) {
+  #app {
+    max-width: 100%;
+    padding: 10px;
+  }
+  img.flag {
+    width: 120px;
+  }
+  #mapContainer {
+    max-width: 100%;
+    height: auto;
+  }
+  #mapQuizSvg {
+    max-width: 100%;
+    height: auto;
+  }
 }

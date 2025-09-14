@@ -7,10 +7,15 @@ let questionIndex = 0;
 let questions = [];
 let startTime = null;
 
-// Google Sheets API 정보
-const SHEET_ID = "1nMRgvM_la03dQJfxl_q-ibXfzFWvjfovBrc08Czbj4U";
-const SHEET_NAME = "Sheet1";
-const API_KEY = "AIzaSyDuvgVZnymXjOjNuKiphgqtm3NKeLxBIPk";
+// Google Form 설정
+const FORM_URL = "https://docs.google.com/forms/u/0/d/e/1FAIpQLSfDoinKgFI1xxaGpIRjHopkb5MhqsNuqTqE5hk3Nd2oi7nziQ/formResponse";
+const ENTRY_GAME   = "entry.96716809";
+const ENTRY_PLAYER = "entry.1585525493";
+const ENTRY_SCORE  = "entry.1461471053";
+const ENTRY_TIME   = "entry.1265121960";
+
+// Google Sheet CSV 공개 링크
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPmVODPefnMPa5S2iauwxw9aM39Ugd1r1-RnPm5JVIswvmuCB6UmdMgY2PAMvotjPrkEj6No8XU3lF/pub?output=csv";
 
 // ====================== 데이터 로드 ======================
 async function loadData() {
@@ -30,7 +35,7 @@ function showHome() {
   const app = document.getElementById("app");
   app.innerHTML = `
     <div class="card">
-      <h1>나라 수도 국기 & 지도 퀴즈</h1>
+      <h1>나라 수도 국기 게임</h1>
       <p>이름을 선택/입력하고 게임을 시작하세요 (각각 5문제)</p>
 
       <h3>참가자 선택</h3>
@@ -62,17 +67,10 @@ function updateCurrentPlayerLabel() {
   el.textContent = currentPlayer ? `현재 참가자: ${currentPlayer}` : `현재 참가자: (미선택)`;
 }
 
-function setPlayer(name) {
-  currentPlayer = name;
-  updateCurrentPlayerLabel();
-}
-
+function setPlayer(name) { currentPlayer = name; updateCurrentPlayerLabel(); }
 function customPlayerSelect() {
   const name = document.getElementById("playerName").value.trim();
-  if (name) {
-    currentPlayer = name;
-    updateCurrentPlayerLabel();
-  }
+  if (name) { currentPlayer = name; updateCurrentPlayerLabel(); }
 }
 
 // ====================== 게임 시작 ======================
@@ -87,15 +85,16 @@ function startGame(gameType) {
   startTime = Date.now();
 
   if (gameType === 5) {
-    // 세계지도 퀴즈는 mapQuiz.js로 분기
+    // 지도 퀴즈는 mapQuiz.js로 분기
     showWorldMapQuiz(currentPlayer);
-  } else {
-    generateQuestions();
-    showQuestion();
+    return;
   }
+
+  generateQuestions();
+  showQuestion();
 }
 
-// ====================== 문제 생성 ======================
+// 문제 생성
 function generateQuestions() {
   questions = [];
   const pool = [...countries];
@@ -111,7 +110,7 @@ function generateQuestions() {
   }
 }
 
-// ====================== 문제 화면 ======================
+// 문제 화면
 function showQuestion() {
   const app = document.getElementById("app");
   const q = questions[questionIndex];
@@ -148,7 +147,7 @@ function escapeQuote(str) {
   return String(str).replaceAll("'", "\\'");
 }
 
-// ====================== 정답 확인 ======================
+// 정답 확인
 function checkAnswer(choice) {
   const q = questions[questionIndex];
   const app = document.getElementById("app");
@@ -193,8 +192,7 @@ function checkAnswer(choice) {
   if (questionIndex < 5) {
     html += `<button class="nav-btn" onclick="showQuestion()">다음 문제</button>`;
   } else {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    saveScoreToSheet(currentGame, currentPlayer, score, elapsed);
+    saveScoreToSheet(currentGame, currentPlayer, score, Math.floor((Date.now() - startTime) / 1000));
     html += `<button class="nav-btn" onclick="showResult()">결과 확인</button>`;
   }
   html += `<button class="nav-btn" onclick="showHome()">처음으로</button>`;
@@ -202,86 +200,31 @@ function checkAnswer(choice) {
   app.innerHTML = html;
 }
 
-// ====================== 결과 화면 ======================
+// ====================== 결과/순위 ======================
 function showResult() {
   const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  showLeaderboard(currentGame, currentPlayer, score, elapsed);
-}
+  loadScoresFromSheet(data => {
+    const filtered = data.filter(d => Number(d.game) === currentGame);
+    filtered.sort((a, b) => (b.score - a.score) || (a.time - b.time));
+    const idx = filtered.findIndex(e => e.player === currentPlayer && e.score === score && e.time === elapsed);
 
-// ====================== Google Sheets 연동 ======================
-function saveScoreToSheet(game, player, score, time) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}:append?valueInputOption=USER_ENTERED&key=${API_KEY}`;
-  const body = {
-    values: [[game, player, score, time, new Date().toISOString()]]
-  };
+    const rankText = (idx > -1 && idx < 10) ? `축하합니다! ${idx + 1}위입니다!! 🎉` : `아쉽네요... 분발하세요!!`;
 
-  fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  })
-  .then(res => res.json())
-  .then(data => console.log("저장 결과:", data))
-  .catch(err => console.error("저장 오류:", err));
-}
-
-function loadScoresFromSheet(callback) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
-  fetch(url)
-    .then(res => res.json())
-    .then(data => {
-      if (!data.values) {
-        callback([]);
-        return;
-      }
-      const rows = data.values.slice(1).map(r => ({
-        game: r[0],
-        player: r[1],
-        score: Number(r[2]),
-        time: Number(r[3]),
-        timestamp: r[4]
-      }));
-      callback(rows);
-    })
-    .catch(err => console.error("불러오기 오류:", err));
-}
-
-function showLeaderboard(gameType, player = "", sc = 0, tm = 0) {
-  loadScoresFromSheet(rows => {
-    const list = rows.filter(r => r.game == gameType);
-    list.sort((a, b) => (b.score - a.score) || (a.time - b.time));
-
-    // 현재 기록 위치 찾기
-    let idx = -1;
-    for (let i = 0; i < list.length; i++) {
-      if (list[i].player === player && list[i].score === sc && list[i].time === tm) {
-        idx = i;
-        break;
-      }
-    }
-    const rankText = (idx > -1 && idx < 10) ?
-      `축하합니다! ${idx + 1}위입니다!! 🎉` :
-      `아쉽네요... 분발하세요!!`;
-
-    let rowsHTML = list.slice(0, 10).map((e, i) =>
-      `<tr><td>${i + 1}</td><td>${e.player}</td><td>${e.score}</td><td>${e.time}</td><td>${e.timestamp}</td></tr>`
+    const rows = filtered.slice(0, 10).map((e, i) =>
+      `<tr><td>${i + 1}</td><td>${e.player}</td><td>${e.score}</td><td>${e.time}초</td></tr>`
     ).join("");
-
-    const tableHTML = `
-      <h3>순위표 (게임 ${gameType})</h3>
-      <table>
-        <tr><th>순위</th><th>이름</th><th>점수</th><th>시간(초)</th><th>기록시각</th></tr>
-        ${rowsHTML}
-      </table>
-    `;
 
     document.getElementById("app").innerHTML = `
       <div class="card">
         <h2>게임 종료</h2>
         <p>${currentPlayer}님 점수: <b>${score}/5</b></p>
-        <p>소요시간: <b>${tm}초</b></p>
+        <p>소요시간: <b>${elapsed}초</b></p>
         <p>${rankText}</p>
-        ${tableHTML}
+        <h3>순위표 (게임 ${currentGame})</h3>
+        <table>
+          <tr><th>순위</th><th>이름</th><th>점수</th><th>시간(초)</th></tr>
+          ${rows}
+        </table>
         <button class="nav-btn" onclick="showHome()">처음으로</button>
         <button class="nav-btn" onclick="showLeaderboardMenu()">순위 확인</button>
       </div>
@@ -289,7 +232,6 @@ function showLeaderboard(gameType, player = "", sc = 0, tm = 0) {
   });
 }
 
-// ====================== 순위 확인 메뉴 ======================
 function showLeaderboardMenu() {
   document.getElementById("app").innerHTML = `
     <div class="card">
@@ -298,10 +240,65 @@ function showLeaderboardMenu() {
       <button class="option-btn" onclick="showLeaderboard(2)">2. 수도 → 나라</button>
       <button class="option-btn" onclick="showLeaderboard(3)">3. 국기 → 나라</button>
       <button class="option-btn" onclick="showLeaderboard(4)">4. 나라 → 국기</button>
-      <button class="option-btn" onclick="showLeaderboard(5)">5. 세계지도</button>
+      <button class="option-btn" onclick="showLeaderboard(5)">5. 세계지도 퀴즈</button>
       <button class="nav-btn" onclick="showHome()">처음으로</button>
     </div>
   `;
+}
+
+function showLeaderboard(gameType) {
+  loadScoresFromSheet(data => {
+    const filtered = data.filter(d => Number(d.game) === gameType);
+    filtered.sort((a, b) => (b.score - a.score) || (a.time - b.time));
+    const rows = filtered.slice(0, 10).map((e, i) =>
+      `<tr><td>${i + 1}</td><td>${e.player}</td><td>${e.score}</td><td>${e.time}초</td></tr>`
+    ).join("");
+    document.getElementById("app").innerHTML = `
+      <div class="card">
+        <h2>게임 ${gameType} 순위</h2>
+        <table>
+          <tr><th>순위</th><th>이름</th><th>점수</th><th>시간(초)</th></tr>
+          ${rows}
+        </table>
+        <button class="nav-btn" onclick="showLeaderboardMenu()">뒤로</button>
+      </div>
+    `;
+  });
+}
+
+// ====================== Google Form 저장 ======================
+function saveScoreToSheet(game, player, score, time) {
+  const formData = new FormData();
+  formData.append(ENTRY_GAME, game);
+  formData.append(ENTRY_PLAYER, player);
+  formData.append(ENTRY_SCORE, score);
+  formData.append(ENTRY_TIME, time);
+
+  fetch(FORM_URL, {
+    method: "POST",
+    body: formData,
+    mode: "no-cors"
+  }).then(() => {
+    console.log("폼 제출 성공 (시트에 기록됨)");
+  }).catch(err => console.error("폼 제출 오류:", err));
+}
+
+// ====================== Google Sheet CSV 불러오기 ======================
+function loadScoresFromSheet(callback) {
+  fetch(CSV_URL)
+    .then(res => res.text())
+    .then(text => {
+      const rows = text.trim().split("\n").map(line => line.split(","));
+      const data = rows.slice(1).map(r => ({
+        game: r[0],
+        player: r[1],
+        score: Number(r[2]),
+        time: Number(r[3]),
+        timestamp: r[4]
+      }));
+      callback(data);
+    })
+    .catch(err => console.error("불러오기 오류:", err));
 }
 
 // ====================== 공부 모드 ======================
@@ -311,8 +308,7 @@ function showStudy(filter = "전체") {
     filtered = countries.filter(c => c.continent_ko === filter);
   }
   const rows = [...filtered]
-    .sort((a, b) => a.continent_ko.localeCompare(b.continent_ko, "ko") ||
-      a.country_ko.localeCompare(b.country_ko, "ko"))
+    .sort((a, b) => a.continent_ko.localeCompare(b.continent_ko, "ko") || a.country_ko.localeCompare(b.country_ko, "ko"))
     .map(c => `
       <tr>
         <td>${c.continent_ko}</td>

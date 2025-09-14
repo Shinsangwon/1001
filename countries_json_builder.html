@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>195개국 나라-수도-대륙 JSON 생성기</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 24px; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    .desc { color: #444; margin-bottom: 16px; }
+    button { padding: 10px 14px; font-size: 16px; cursor: pointer; }
+    .log { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+           background: #f7f7f8; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; margin-top: 16px; max-height: 40vh; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>195개국 나라·수도·대륙 JSON 생성기</h1>
+  <p class="desc">
+    아래 버튼을 누르면 신뢰 가능한 공개 데이터 소스에서 정보를 불러와,<br/>
+    <b>195개국</b>의 한글/영문 국가명, 수도(한/영), 대륙(한/영), 국기 이미지 링크를 병합해 <code>countries.json</code> 파일로 저장합니다.
+  </p>
+  <button id="buildBtn">데이터 불러와서 JSON 만들기</button>
+  <div class="log" id="log"></div>
+
+  <script>
+    const log = (...args) => {
+      const el = document.getElementById('log');
+      el.textContent += args.join(' ') + "\\n";
+    };
+
+    // 공개 데이터 소스 (인용/출처는 페이지 하단에 명시)
+    const SRC_WC_KO = "https://cdn.jsdelivr.net/npm/world_countries_lists@latest/data/countries/ko/countries.json";
+    const SRC_WC_EN = "https://cdn.jsdelivr.net/npm/world_countries_lists@latest/data/countries/en/countries.json";
+    const SRC_REST = "https://restcountries.com/v3.1/all";
+
+    // 대륙 한글 매핑
+    const CONTINENT_MAP_KO = {
+      "Africa": "아프리카",
+      "Asia": "아시아",
+      "Europe": "유럽",
+      "Americas": "아메리카",
+      "Oceania": "오세아니아",
+      "Antarctica": "남극"
+    };
+
+    // 수도명 한국어 매핑(필요시 일부 수동 예외 처리; 기본은 null 유지 가능)
+    // 확장하려면 아래 객체에 {영문수도: "한글표기"} 를 추가하세요.
+    const CAPITAL_KO_OVERRIDE = {
+      "Seoul": "서울",
+      "Tokyo": "도쿄",
+      "Beijing": "베이징",
+      "Washington, D.C.": "워싱턴 D.C.",
+      "Paris": "파리",
+      "London": "런던",
+      "Canberra": "캔버라",
+      "Ottawa": "오타와",
+      "Brasília": "브라질리아",
+      "New Delhi": "뉴델리",
+      "Moscow": "모스크바",
+      "Berlin": "베를린",
+      "Rome": "로마",
+      "Madrid": "마드리드",
+      "Bangkok": "방콕",
+      "Hanoi": "하노이",
+      "Jakarta": "자카르타",
+      "Riyadh": "리야드",
+      "Abu Dhabi": "아부다비",
+      "Doha": "도하",
+      "Ankara": "앙카라",
+      "Cairo": "카이로"
+      // 필요 시 계속 추가
+    };
+
+    async function fetchJSON(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Fetch failed: " + url + " (" + res.status + ")");
+      return res.json();
+    }
+
+    function download(filename, text) {
+      const blob = new Blob([text], {type: "application/json;charset=utf-8"});
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    }
+
+    document.getElementById("buildBtn").addEventListener("click", async () => {
+      try {
+        log("데이터 불러오는 중...");
+
+        log("· 세계국가(한글, 195개) 가져오는 중...");
+        const wcKo = await fetchJSON(SRC_WC_KO); // [{id, alpha2, alpha3, name}, ...] 195개
+        log("  - OK:", wcKo.length, "행");
+
+        log("· 세계국가(영문, 195개) 가져오는 중...");
+        const wcEn = await fetchJSON(SRC_WC_EN); // [{id, alpha2, alpha3, name}, ...] 195개
+        log("  - OK:", wcEn.length, "행");
+
+        log("· REST Countries (모든 국가/영토, 약 250개) 가져오는 중...");
+        const rest = await fetchJSON(SRC_REST);  // [{cca2, name.common, capital, region, ...}, ...]
+        log("  - OK:", rest.length, "행");
+
+        // 빠른 조회를 위해 맵 구성
+        const enByAlpha2 = new Map(wcEn.map(r => [String(r.alpha2).toLowerCase(), r]));
+        const restByAlpha2 = new Map(rest.map(r => [String(r.cca2 || '').toLowerCase(), r]));
+
+        // 195개 유엔 회원국 + 2 옵저버만 대상 (world_countries_lists의 countries.json 기준)
+        const merged = wcKo.map(koRec => {
+          const a2 = String(koRec.alpha2).toLowerCase();
+          const enRec = enByAlpha2.get(a2);
+          const restRec = restByAlpha2.get(a2);
+
+          // 영문 수도/대륙 추출 (a/b 룰: 없으면 null)
+          let capital_en = null;
+          let region_en = null;
+          if (restRec) {
+            // capital: array일 수 있음
+            if (Array.isArray(restRec.capital) && restRec.capital.length > 0) {
+              capital_en = restRec.capital[0];
+            }
+            region_en = restRec.region || null;
+          }
+
+          // 수도 한글: 우선 수동 매핑 → 없으면 null 유지
+          const capital_ko = capital_en && CAPITAL_KO_OVERRIDE[capital_en] ? CAPITAL_KO_OVERRIDE[capital_en] : null;
+
+          return {
+            country_ko: koRec.name || null,
+            country_en: enRec?.name || (restRec?.name?.common ?? null),
+            capital_ko,
+            capital_en,
+            continent_ko: region_en ? (CONTINENT_MAP_KO[region_en] || null) : null,
+            continent_en: region_en,
+            flag: `https://flagcdn.com/w320/${a2}.png`  // alpha-2 코드 기반
+          };
+        });
+
+        // 한글 국가명 가나다 정렬
+        merged.sort((a, b) => (a.country_ko || "").localeCompare(b.country_ko || "", "ko"));
+
+        const text = JSON.stringify(merged, null, 2);
+        download("countries.json", text);
+        log("✅ 완료! countries.json 파일이 다운로드되었습니다.");
+        log("참고: 수도 한글명(capital_ko)은 우선 몇몇 대표국만 수동 매핑되어 있습니다.");
+        log("필요하면 CAPITAL_KO_OVERRIDE에 항목을 추가해 확장하세요.");
+        log("");
+        log("출처:");
+        log(" - World countries (195개, 다국어): stefangabos/world_countries (jsDelivr)");
+        log(" - Capitals/Regions: REST Countries v3.1");
+        log(" - Flags: flagcdn.com (ISO alpha-2 기반)");
+      } catch (err) {
+        console.error(err);
+        log("❌ 오류:", err.message);
+      }
+    });
+  </script>
+
+  <hr/>
+  <small>
+    출처/라이선스:<br/>
+    · stefangabos/world_countries — CC BY-SA 4.0 (195개국 다국어 국가명) <br/>
+    · REST Countries v3.1 — 공개 API (수도/지역 정보) <br/>
+    · flagcdn.com — 공개 국기 이미지 CDN (ISO 3166-1 alpha-2 기반) <br/>
+  </small>
+</body>
+</html>

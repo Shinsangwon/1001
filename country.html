@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>나라-수도 맞추기 게임</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f9; padding: 20px; }
+    h1 { margin-bottom: 20px; }
+    #game, #result-screen { display: none; }
+    #flag { width: 150px; margin: 10px 0; border: 1px solid #ccc; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); }
+    .choices { display: flex; flex-direction: column; gap: 10px; max-width: 300px; margin: 20px auto; }
+    button { padding: 10px; font-size: 16px; cursor: pointer; border: 1px solid #888; border-radius: 6px; background: #fff; }
+    button:hover { background: #e6e6e6; }
+    #result { font-size: 18px; font-weight: bold; margin-top: 20px; }
+    #rankings { margin-top: 20px; text-align: left; display: inline-block; }
+  </style>
+</head>
+<body>
+  <h1>나라-수도 맞추기 게임</h1>
+
+  <!-- 플레이어 선택 화면 -->
+  <div id="player-select">
+    <h2>플레이어를 선택하세요</h2>
+    <div>
+      <button onclick="selectPlayer('신준열')">신준열</button>
+      <button onclick="selectPlayer('신규열')">신규열</button>
+      <button onclick="selectPlayer('파닥이')">파닥이</button>
+      <button onclick="selectPlayer('수박이')">수박이</button>
+    </div>
+    <p>직접 입력:</p>
+    <input type="text" id="custom-name" placeholder="이름 입력" />
+    <button onclick="selectCustomPlayer()">확인</button>
+  </div>
+
+  <!-- 게임 화면 -->
+  <div id="game">
+    <h2 id="country-name"></h2>
+    <img id="flag" alt="국기" />
+    <div class="choices" id="choices"></div>
+    <div id="result"></div>
+    <button onclick="nextQuestion()">다음 문제</button>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div id="result-screen">
+    <h2>게임 결과</h2>
+    <p id="summary"></p>
+    <div id="rankings"></div>
+    <button onclick="restart()">다시 시작</button>
+  </div>
+
+  <script>
+    let countries = [];
+    let correctCapital = "";
+    let score = 0;
+    let questionCount = 0;
+    let playerName = "";
+    let startTime;
+    let rankings = [];
+
+    async function loadData() {
+      const res = await fetch("countries.json");
+      countries = await res.json();
+    }
+
+    function selectPlayer(name) {
+      playerName = name;
+      startGame();
+    }
+
+    function selectCustomPlayer() {
+      const name = document.getElementById("custom-name").value.trim();
+      if (name) {
+        playerName = name;
+        startGame();
+      }
+    }
+
+    function startGame() {
+      document.getElementById("player-select").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      score = 0;
+      questionCount = 0;
+      startTime = new Date();
+      newQuestion();
+    }
+
+    function newQuestion() {
+      document.getElementById("result").textContent = "";
+      const country = countries[Math.floor(Math.random() * countries.length)];
+      correctCapital = country.capital_ko || country.capital_en;
+      document.getElementById("country-name").textContent = country.country_ko;
+      document.getElementById("flag").src = country.flag;
+
+      // 오답 4개 추출
+      let wrongChoices = [];
+      while (wrongChoices.length < 4) {
+        const rand = countries[Math.floor(Math.random() * countries.length)];
+        const cap = rand.capital_ko || rand.capital_en;
+        if (cap && cap !== correctCapital && !wrongChoices.includes(cap)) {
+          wrongChoices.push(cap);
+        }
+      }
+
+      // 정답 + 오답 합치기
+      const allChoices = [correctCapital, ...wrongChoices];
+      shuffle(allChoices);
+
+      // 보기 출력
+      const choicesDiv = document.getElementById("choices");
+      choicesDiv.innerHTML = "";
+      allChoices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice);
+        choicesDiv.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(choice) {
+      if (choice === correctCapital) {
+        score++;
+        document.getElementById("result").textContent = "✅ 정답!";
+        document.getElementById("result").style.color = "green";
+      } else {
+        document.getElementById("result").textContent = "❌ 오답!";
+        document.getElementById("result").style.color = "red";
+      }
+    }
+
+    function nextQuestion() {
+      questionCount++;
+      if (questionCount >= 10) {
+        endGame();
+      } else {
+        newQuestion();
+      }
+    }
+
+    function endGame() {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("result-screen").style.display = "block";
+      const endTime = new Date();
+      const timeTaken = ((endTime - startTime) / 1000).toFixed(1);
+
+      const accuracy = ((score / 10) * 100).toFixed(0);
+      const playerResult = {
+        name: playerName,
+        score: score,
+        accuracy: accuracy,
+        time: timeTaken
+      };
+
+      rankings.push(playerResult);
+      // 정렬: 점수 우선, 시간 빠른 순
+      rankings.sort((a, b) => b.score - a.score || a.time - b.time);
+      rankings = rankings.slice(0, 10);
+
+      // 결과 표시
+      const summary = `${playerName}님, 10문제 중 ${score}개 정답 (${accuracy}%), 소요 시간 ${timeTaken}초`;
+      document.getElementById("summary").textContent = summary;
+
+      let rankingText = "<h3>🏆 순위표</h3><ol>";
+      rankings.forEach((r, i) => {
+        rankingText += `<li>${i+1}위 - ${r.name} (${r.score}/10, ${r.accuracy}%, ${r.time}초)</li>`;
+      });
+      rankingText += "</ol>";
+      document.getElementById("rankings").innerHTML = rankingText;
+
+      const myRank = rankings.findIndex(r => r.name === playerName && r.score === score && r.time === timeTaken) + 1;
+      if (myRank > 0 && myRank <= 10) {
+        document.getElementById("rankings").innerHTML += `<p>🎉 축하합니다! ${myRank}위입니다!!</p>`;
+      } else {
+        document.getElementById("rankings").innerHTML += `<p>😢 아쉽네요... 분발하세요!!</p>`;
+      }
+    }
+
+    function restart() {
+      document.getElementById("result-screen").style.display = "none";
+      document.getElementById("player-select").style.display = "block";
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

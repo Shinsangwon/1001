@@ -39,19 +39,27 @@
       border: 2px solid #ddd;
       border-radius: 10px;
     }
-    .choice-img {
-      width: 80px;
-      height: 50px;
-      object-fit: cover;
-      border: 2px solid #ddd;
-      border-radius: 6px;
-      margin: 5px;
-      cursor: pointer;
+    /* 보기 버튼 */
+    .choice-btn {
+      display:block;
+      margin:8px auto;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      width:90%;
+      max-width:300px;
+      background:#fff;
+      cursor:pointer;
     }
-    .choices {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+    /* 3번게임 국기 보기 */
+    .choice-img {
+      width: 180px;
+      height: auto;
+      display: block;
+      margin: 10px auto;
+      border: 3px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
     }
     #feedbackMsg {
       font-size: 18px;
@@ -73,6 +81,7 @@
       <input type="text" id="newPlayer" placeholder="새 참가자 입력">
       <button onclick="addPlayer()">추가</button>
       <h3>게임을 선택하세요</h3>
+      <p>📢 각 게임은 10문제가 출제됩니다.</p>
       <button onclick="startGame(1)">1. 나라이름 → 수도 맞추기</button>
       <button onclick="startGame(2)">2. 국기 → 나라이름 맞추기</button>
       <button onclick="startGame(3)">3. 나라이름 → 국기 맞추기</button>
@@ -80,9 +89,10 @@
 
     <!-- 게임 화면 -->
     <div id="game" style="display:none;">
+      <h2 id="progress"></h2>
       <h2 id="question"></h2>
       <img id="flag" class="flag" style="display:none;">
-      <div id="choices" class="choices"></div>
+      <div id="choices"></div>
       <div class="back-btn">
         <button onclick="goHome()">🏠 처음으로</button>
       </div>
@@ -115,10 +125,8 @@
     let startTime;
     let ranking = [];
 
-    // 참가자 기본 4명
     let defaultPlayers = ["신준열", "신규열", "파닥이", "수박이"];
 
-    // 참가자 버튼 표시
     function renderPlayers(){
       let div=document.getElementById("players");
       div.innerHTML="";
@@ -164,10 +172,10 @@
       flag.style.display="none";
 
       let arr=[...data];
-      let idx=Math.floor(Math.random()*arr.length);
-      currentQ=arr[idx];
-      let wrongs=arr.filter(x=>x!==currentQ);
-      wrongs=wrongs.sort(()=>Math.random()-0.5).slice(0,4);
+      currentQ=arr[Math.floor(Math.random()*arr.length)];
+      let wrongs=arr.filter(x=>x!==currentQ).sort(()=>Math.random()-0.5).slice(0,4);
+
+      document.getElementById("progress").textContent=`문제 ${currentQuestion+1}/10`;
 
       if(gameMode===1){
         q.textContent=`[${currentQ.continent_ko}] ${currentQ.country_ko}의 수도는 어디일까요?`;
@@ -175,17 +183,19 @@
         let opts=[currentQ.capital_ko,...wrongs.map(x=>x.capital_ko)].sort(()=>Math.random()-0.5);
         opts.forEach(opt=>{
           let b=document.createElement("button");
+          b.className="choice-btn";
           b.textContent=opt;
           b.onclick=()=>checkAnswer(opt===currentQ.capital_ko);
           choices.appendChild(b);
         });
       }
       else if(gameMode===2){
-        q.textContent="이 국기는 어느 나라일까요?";
+        q.textContent=`이 국기는 어느 나라일까요? (${currentQ.continent_ko})`;
         flag.src=currentQ.flag; flag.style.display="block";
         let opts=[currentQ.country_ko,...wrongs.map(x=>x.country_ko)].sort(()=>Math.random()-0.5);
         opts.forEach(opt=>{
           let b=document.createElement("button");
+          b.className="choice-btn";
           b.textContent=opt;
           b.onclick=()=>checkAnswer(opt===currentQ.country_ko);
           choices.appendChild(b);
@@ -214,16 +224,17 @@
         msg.textContent="✅ 정답입니다!";
         msg.style.color="green";
       } else {
-        let correctTxt=(gameMode===1?currentQ.capital_ko:(gameMode===2?currentQ.country_ko:"해당 국기"));
+        let correctTxt=(gameMode===1?currentQ.capital_ko:(gameMode===2?currentQ.country_ko:`${currentQ.country_ko}의 국기`));
         msg.textContent=`❌ 오답! 정답은 ${correctTxt} 입니다.`;
         msg.style.color="red";
       }
 
-      // 문제 카운트 증가를 여기서 수행
       currentQuestion++;
     }
 
     function endGame(){
+      document.getElementById("game").style.display="none";
+      document.getElementById("feedback").style.display="none";
       document.getElementById("result").style.display="block";
       let elapsed=(new Date()-startTime)/1000;
       let rate=Math.round(score/10*100);
@@ -254,7 +265,6 @@
       document.getElementById("result").style.display="none";
     }
 
-    // 데이터 로드 (GitHub Pages)
     fetch("https://shinsangwon.github.io/1001/countries.json")
       .then(r=>r.json())
       .then(j=>{data=j; renderPlayers();})

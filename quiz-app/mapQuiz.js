@@ -1,33 +1,5 @@
 // ====================== 세계지도 퀴즈 ======================
-// D3.js + TopoJSON 기반
-// quiz.js에서 startGame(5) → showWorldMapQuiz(player) 호출
 
-function showWorldMapQuiz(playerName) {
-  const app = document.getElementById("app");
-  app.innerHTML = `
-    <div class="card">
-      <h2>세계지도 나라 맞히기 퀴즈</h2>
-      <div id="map"></div>
-
-      <div class="panel">
-        <input id="answer" type="text" placeholder="어느 나라일까요? (한국어/영어 모두 OK)" />
-        <button id="checkBtn">정답 확인</button>
-        <button id="revealBtn" class="secondary">정답 보기</button>
-        <button id="nextBtn">다음 문제</button>
-      </div>
-
-      <div class="choices" id="choices"></div>
-      <div class="status" id="status"></div>
-      <div id="answerBox"></div>
-      <div class="note">마우스 휠로 확대/축소, 드래그로 이동할 수 있어요.</div>
-      <button class="nav-btn" onclick="showHome()">처음으로</button>
-    </div>
-  `;
-
-  initWorldMapQuiz(playerName);
-}
-
-// ====================== 내부 상태 ======================
 let features = [];
 let current = null;
 let koreanNames = {};
@@ -35,53 +7,45 @@ let countryInfo = {};
 let nameIndex = {};
 let mapScore = 0;
 let mapQuestionIndex = 0;
-let mapStartTime = null;
 
-// ====================== 초기화 ======================
-function initWorldMapQuiz(playerName) {
+// 지도 크기
+const width = 600;
+const height = 400;
+
+const projection = d3.geoEqualEarth()
+  .translate([width / 2, height / 2])
+  .scale(180);
+
+const path = d3.geoPath(projection);
+
+const svg = d3.select("body").append("svg")
+  .attr("id", "mapQuizSvg")
+  .attr("viewBox", `0 0 ${width} ${height}`)
+  .style("display", "none")
+  .style("width", "100%")
+  .style("height", "300px");
+
+const gCountries = svg.append("g");
+
+const zoom = d3.zoom()
+  .scaleExtent([1, 8])
+  .on("zoom", (event) => gCountries.attr("transform", event.transform));
+svg.call(zoom);
+
+function showWorldMapQuiz(playerName) {
   mapScore = 0;
   mapQuestionIndex = 0;
-  mapStartTime = Date.now();
 
-  const GEOJSON_URL = "https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json";
-  const COUNTRY_JSON_URL = "countries.json";
-
-  const width = Math.min(1000, window.innerWidth - 40);
-  const height = 560;
-
-  // SVG 생성
-  const svg = d3.select("#map").append("svg")
-    .attr("viewBox", `0 0 ${width} ${height}`)
-    .style("width", "100%")
-    .style("height", "100%");
-
-  const projection = d3.geoEqualEarth()
-    .translate([width/2, height/2])
-    .scale(Math.min(width, height) * 0.32);
-
-  const path = d3.geoPath(projection);
-
-  // 바다 배경
-  svg.append("rect")
-    .attr("width", width)
-    .attr("height", height)
-    .attr("fill", "#a7d3f5");
-
-  const gCountries = svg.append("g");
-
-  const zoom = d3.zoom()
-    .scaleExtent([1, 8])
-    .on("zoom", (event) => {
-      gCountries.attr("transform", event.transform);
-    });
-  svg.call(zoom);
-
-  // 데이터 로드
+  // 지도 준비
   Promise.all([
-    fetch(GEOJSON_URL).then(r => r.json()),
-    fetch(COUNTRY_JSON_URL).then(r => r.json())
+    fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json").then(r => r.json()),
+    fetch("countries.json").then(r => r.json())
   ]).then(([geoData, countryData]) => {
     features = geoData.features.filter(f => f.properties && f.properties.name);
+
+    koreanNames = {};
+    countryInfo = {};
+    nameIndex = {};
 
     countryData.forEach(c => {
       koreanNames[c.country_en] = c.country_ko;
@@ -90,156 +54,112 @@ function initWorldMapQuiz(playerName) {
       if (c.country_ko) nameIndex[c.country_ko.toLowerCase()] = c.country_en;
     });
 
-    drawBaseMap(gCountries, path);
-    nextWorldMapQuestion(playerName, gCountries, path);
-  }).catch(err => {
-    console.error(err);
-    d3.select("#status").attr("class","status wrong").text("데이터를 불러오지 못했어요.");
+    gCountries.selectAll("path.country")
+      .data(features)
+      .join("path")
+      .attr("class", "country")
+      .attr("d", path)
+      .attr("fill", "#d9b38c")
+      .attr("stroke", "#999")
+      .attr("stroke-width", 0.5);
+
+    nextWorldMapQuestion(playerName);
   });
-
-  // 버튼 이벤트
-  document.getElementById("checkBtn").onclick = () => checkWorldMapAnswer(playerName);
-  document.getElementById("revealBtn").onclick = () => revealWorldMapAnswer();
-  document.getElementById("nextBtn").onclick = () => nextWorldMapQuestion(playerName, gCountries, path);
 }
 
-// ====================== 지도 기본 그리기 ======================
-function drawBaseMap(gCountries, path) {
-  gCountries.selectAll("path.country")
-    .data(features)
-    .join("path")
-    .attr("class", "country")
-    .attr("d", path)
-    .attr("fill", "#d9b38c")
-    .attr("stroke", "#999")
-    .attr("stroke-width", 0.5);
-}
-
-// ====================== 문제 뽑기 ======================
 function pickRandomCountry() {
   return features[Math.floor(Math.random() * features.length)];
 }
 
-function highlightCountry(gCountries, path, f) {
+function highlightCountry(f) {
   gCountries.selectAll("path.country")
     .attr("fill", d => (d === f ? "#5c7cfa" : "#d9b38c"))
     .attr("stroke", d => (d === f ? "#172b4d" : "#999"))
     .attr("stroke-width", d => (d === f ? 1.2 : 0.5));
+
+  // 선택한 국가 영역 중심으로 확대
+  const [[x0, y0], [x1, y1]] = path.bounds(f);
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const x = (x0 + x1) / 2;
+  const y = (y0 + y1) / 2;
+  const scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height)));
+  const translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+  gCountries.transition().duration(750)
+    .attr("transform", `translate(${translate})scale(${scale})`);
 }
 
 function getDisplayName(name) {
   return koreanNames[name] || name;
 }
 
-// ====================== 선택지 만들기 ======================
-function makeChoices(correctName) {
-  const names = features.map(f => f.properties.name).filter(n => n !== correctName);
-  const choices = new Set();
-  while (choices.size < 3) {
-    choices.add(names[Math.floor(Math.random() * names.length)]);
+function nextWorldMapQuestion(playerName) {
+  if (mapQuestionIndex >= 5) {
+    endWorldMapQuiz(playerName);
+    return;
   }
-  const four = d3.shuffle([correctName, ...choices]);
-  const box = d3.select("#choices").html("");
-  four.forEach(n => {
-    box.append("div")
-      .attr("class","choice")
-      .text(getDisplayName(n))
-      .on("click", () => checkWorldMapAnswer(null, n));
+
+  current = pickRandomCountry();
+  highlightCountry(current);
+
+  const continent = countryInfo[current.properties.name]?.continent_ko || "기타";
+
+  // 보기 생성 (같은 대륙에서만)
+  let sameContinent = Object.values(countryInfo).filter(c => c.continent_ko === continent);
+  if (sameContinent.length < 5) sameContinent = Object.values(countryInfo); // fallback
+
+  const correctName = current.properties.name;
+  const options = [correctName];
+  while (options.length < 5) {
+    const cand = sameContinent[Math.floor(Math.random() * sameContinent.length)].country_en;
+    if (!options.includes(cand)) options.push(cand);
+  }
+  options.sort(() => Math.random() - 0.5);
+
+  const app = document.getElementById("app");
+  let html = `<div class="card"><h3>${mapQuestionIndex + 1} / 5</h3>`;
+  html += `<h3>다음 나라의 이름은 무엇일까요? (${continent})</h3>`;
+  options.forEach(n => {
+    html += `<button class="option-btn" onclick="checkWorldMapAnswer('${playerName}','${escapeQuote(n)}')">${getDisplayName(n)}</button>`;
   });
+  html += `</div>`;
+  app.innerHTML = html;
+
+  d3.select("#mapQuizSvg").style("display", "block");
 }
 
-// ====================== 정답 확인 ======================
-function normalizeInput(s) {
-  return s.trim().toLowerCase();
-}
-
-function showAnswerBox(countryEn) {
-  const info = countryInfo[countryEn];
-  if (!info) return;
-  const box = document.getElementById("answerBox");
-  box.innerHTML = `
-    <div class="answer-box">
-      <img src="${info.flag}" alt="국기">
-      <div>
-        <div><b>${info.country_ko || info.country_en}</b> (${info.country_en})</div>
-        <div>수도: ${info.capital_ko || info.capital_en || "정보 없음"}</div>
-      </div>
-    </div>
-  `;
-}
-
-function checkWorldMapAnswer(playerName, raw) {
-  const status = d3.select("#status").attr("class","status");
-  document.getElementById("answerBox").innerHTML = "";
-  const guess = raw || document.getElementById("answer").value;
-  const norm = normalizeInput(guess);
-  const mapped = nameIndex[norm] || null;
+function checkWorldMapAnswer(playerName, choice) {
   const correct = current.properties.name;
+  const correctKo = getDisplayName(correct);
 
-  const isCorrect =
-    (mapped && mapped === correct) ||
-    normalizeInput(correct) === norm ||
-    normalizeInput(getDisplayName(correct)) === norm;
+  const correctSfx = document.getElementById("correctSound");
+  const wrongSfx = document.getElementById("wrongSound");
 
-  d3.selectAll(".choice").each(function() {
-    const el = d3.select(this);
-    if (el.text() === getDisplayName(correct)) el.classed("correct", true);
-    if (guess && el.text() === guess && getDisplayName(correct) !== guess) el.classed("wrong", true);
-  });
+  let html = `<div class="card"><h3>${mapQuestionIndex + 1} / 5</h3>`;
 
-  if (isCorrect) {
+  if (choice === correct) {
     mapScore++;
-    document.getElementById("correctSound").play();
-    status.attr("class","status correct").text(`정답! ✅`);
-    showAnswerBox(correct);
+    if (correctSfx) { try { correctSfx.currentTime = 0; correctSfx.play(); } catch(e){} }
+    html += `<p><b>정답!</b></p>`;
   } else {
-    document.getElementById("wrongSound").play();
-    status.attr("class","status wrong").text(`아쉬워요 😅 정답은 아래와 같습니다.`);
-    showAnswerBox(correct);
+    if (wrongSfx) { try { wrongSfx.currentTime = 0; wrongSfx.play(); } catch(e){} }
+    html += `<p>오답! 정답은 <b>${correctKo}</b></p>`;
   }
 
   mapQuestionIndex++;
-  if (mapQuestionIndex >= 5) {
-    endWorldMapQuiz(playerName);
+  if (mapQuestionIndex < 5) {
+    html += `<button class="nav-btn" onclick="nextWorldMapQuestion('${playerName}')">다음 문제</button>`;
+  } else {
+    saveScoreToSheet(5, playerName, mapScore, Math.floor((Date.now() - startTime) / 1000));
+    html += `<button class="nav-btn" onclick="showResult()">결과 확인</button>`;
   }
+  html += `<button class="nav-btn" onclick="showHome()">처음으로</button>`;
+  html += `</div>`;
+
+  document.getElementById("app").innerHTML = html;
 }
 
-function revealWorldMapAnswer() {
-  const correct = current?.properties?.name;
-  if (!correct) return;
-  d3.select("#status").attr("class","status").text("정답:");
-  showAnswerBox(correct);
-  d3.selectAll(".choice").each(function() {
-    const el = d3.select(this);
-    if (el.text() === getDisplayName(correct)) el.classed("correct", true);
-  });
-}
-
-function nextWorldMapQuestion(playerName, gCountries, path) {
-  d3.select("#status").attr("class","status").text("");
-  document.getElementById("answer").value = "";
-  document.getElementById("answerBox").innerHTML = "";
-  current = pickRandomCountry();
-  highlightCountry(gCountries, path, current);
-  makeChoices(current.properties.name);
-}
-
-// ====================== 게임 종료 ======================
 function endWorldMapQuiz(playerName) {
-  const elapsed = Math.floor((Date.now() - mapStartTime) / 1000);
-  saveScoreToSheet(5, playerName, mapScore, elapsed);
-
-  document.getElementById("app").innerHTML = `
-    <div class="card">
-      <h2>세계지도 퀴즈 종료</h2>
-      <p>${playerName}님 점수: <b>${mapScore}/5</b></p>
-      <p>소요시간: <b>${elapsed}초</b></p>
-      <button class="nav-btn" onclick="showResultWorldMap(${elapsed})">결과 확인</button>
-      <button class="nav-btn" onclick="showHome()">처음으로</button>
-    </div>
-  `;
-}
-
-function showResultWorldMap(elapsed) {
-  showLeaderboard(5, currentPlayer, mapScore, elapsed);
+  showResult(); // quiz.js의 결과창 호출
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>나라 수도 국기 게임1.5</title>
+  <title>나라 수도 국기 게임1.6</title>
   <style>
     body{
       font-family: Arial, sans-serif;
@@ -45,10 +45,15 @@
     th,td{ border:1px solid #ddd; padding:6px; font-size:14px; }
     th{ background:#f8b500; color:#fff; }
     input[type="text"]{ padding:8px; width:90%; margin:10px 0; }
+    #timer{ font-weight:bold; color:#d9534f; }
   </style>
 </head>
 <body>
   <div id="app"></div>
+
+  <!-- 효과음 -->
+  <audio id="correctSound" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3"></audio>
+  <audio id="wrongSound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-950.mp3"></audio>
 
   <script>
     // 전역 상태
@@ -59,6 +64,9 @@
     let questionIndex = 0;
     let questions = [];
     let startTime = null;
+    let timer = null;
+    let timeLeft = 0;
+    const QUESTION_TIME = 15;
 
     // 데이터 로드
     async function loadData(){
@@ -73,7 +81,7 @@
       }
     }
 
-    // 홈 (참가자 선택 + 게임 선택 + 순위 확인)
+    // 홈
     function showHome(){
       const app = document.getElementById("app");
       app.innerHTML = `
@@ -100,7 +108,6 @@
           <button class="small-btn" onclick="showLeaderboardMenu()">순위 확인</button>
         </div>
       `;
-      // 현재 선택된 참가자 표시
       updateCurrentPlayerLabel();
     }
 
@@ -109,7 +116,6 @@
       if(!el) return;
       el.textContent = currentPlayer ? `현재 참가자: ${currentPlayer}` : `현재 참가자: (미선택)`;
     }
-
     function setPlayer(name){ currentPlayer = name; updateCurrentPlayerLabel(); }
     function customPlayerSelect(){
       const name = document.getElementById("playerName").value.trim();
@@ -130,54 +136,49 @@
       showQuestion();
     }
 
-    // 문제 5개 생성 (각 문제마다 보기 5개)
+    // 문제 생성
     function generateQuestions(){
       questions = [];
-      const pool = [...countries]; // 얕은 복사
+      const pool = [...countries];
       for(let i=0; i<5; i++){
-        // 정답 하나 뽑기
         const ans = pool.splice(Math.floor(Math.random()*pool.length),1)[0];
-        // 보기 꾸리기 (정답 + 오답)
         const opts = [ans];
-        // 오답은 전체 countries에서 랜덤 추출(중복 방지)
         while(opts.length < 5){
           const cand = countries[Math.floor(Math.random()*countries.length)];
           if(!opts.includes(cand)) opts.push(cand);
         }
-        // 보기 섞기
         opts.sort(()=>Math.random()-.5);
         questions.push({ answer: ans, options: opts });
       }
     }
 
-    // 문제 화면
+    // 문제 표시
     function showQuestion(){
       const app = document.getElementById("app");
       const q = questions[questionIndex];
+      timeLeft = QUESTION_TIME;
 
       let html = `<div class="card"><h3>${questionIndex+1} / 5</h3>`;
+      html += `<p id="timer">남은 시간: ${timeLeft}초</p>`;
+
       if(currentGame===1){
-        // 나라 → 수도 (국기 보여줌, 대륙 힌트)
         html += `<h3>${q.answer.continent_ko}에 있는 ${q.answer.country_ko}의 수도는?</h3>`;
         html += `<img class="flag" src="${q.answer.flag}" alt="flag">`;
         q.options.forEach(o=>{
           html += `<button class="option-btn" onclick="checkAnswer('${escapeQuote(o.capital_ko)}')">${o.capital_ko}</button>`;
         });
       }else if(currentGame===2){
-        // 수도 → 나라 (대륙 힌트, 국기 X)
         html += `<h3>${q.answer.capital_ko}의 수도를 가진 나라는 어디일까요? (${q.answer.continent_ko})</h3>`;
         q.options.forEach(o=>{
           html += `<button class="option-btn" onclick="checkAnswer('${escapeQuote(o.country_ko)}')">${o.country_ko}</button>`;
         });
       }else if(currentGame===3){
-        // 국기 → 나라 (대륙 힌트, 정답 국기 먼저 보여주는 오답해설 필요)
         html += `<h3>다음 국기는 어느 나라 국기일까요? (${q.answer.continent_ko})</h3>`;
         html += `<img class="flag" src="${q.answer.flag}" alt="flag">`;
         q.options.forEach(o=>{
           html += `<button class="option-btn" onclick="checkAnswer('${escapeQuote(o.country_ko)}')">${o.country_ko}</button>`;
         });
       }else if(currentGame===4){
-        // 나라 → 국기 (보기: 국기 이미지 5개)
         html += `<h3>${q.answer.continent_ko}에 있는 ${q.answer.country_ko}의 국기는?</h3>`;
         q.options.forEach(o=>{
           html += `<button class="option-btn" onclick="checkAnswer('${escapeQuote(o.country_ko)}')"><img class="flag" src="${o.flag}" alt="flag"></button>`;
@@ -185,15 +186,30 @@
       }
       html += `</div>`;
       app.innerHTML = html;
+
+      startTimer();
     }
 
-    // 따옴표 이스케이프 (onclick 문자열 안정성)
+    function startTimer(){
+      clearInterval(timer);
+      timer = setInterval(()=>{
+        timeLeft--;
+        const el = document.getElementById("timer");
+        if(el) el.textContent = `남은 시간: ${timeLeft}초`;
+        if(timeLeft <= 0){
+          clearInterval(timer);
+          checkAnswer("TIMEOUT");
+        }
+      },1000);
+    }
+
     function escapeQuote(str){
       return String(str).replaceAll("'", "\\'");
     }
 
-    // 정답 확인 + 해설
+    // 정답 확인
     function checkAnswer(choice){
+      clearInterval(timer);
       const q = questions[questionIndex];
       const app = document.getElementById("app");
       let html = `<div class="card"><h3>${questionIndex+1} / 5</h3>`;
@@ -206,15 +222,17 @@
 
       if(isCorrect){
         score++;
+        document.getElementById("correctSound").play();
         html += `<p><b>정답!</b></p>`;
       }else{
-        // 오답 해설
-        if(currentGame===1){
+        document.getElementById("wrongSound").play();
+        if(choice==="TIMEOUT"){
+          html += `<p><b>시간 초과!</b> 정답은 <b>${q.answer.country_ko} / ${q.answer.capital_ko}</b></p>`;
+        }else if(currentGame===1){
           html += `<p>오답! 정답은 <b>${q.answer.capital_ko}</b></p>`;
         }else if(currentGame===2){
           html += `<p>오답! 정답은 <b>${q.answer.country_ko}</b></p>`;
         }else if(currentGame===3){
-          // (요청) 문제 국기 먼저, 그 다음 문구 + 선택한 나라의 국기
           const wrongFlag = (countries.find(c=>c.country_ko===choice)||{}).flag || "";
           html += `
             <img class="flag" src="${q.answer.flag}" alt="correct-flag"><br/>
@@ -223,7 +241,6 @@
             ${wrongFlag ? `<img class="flag" src="${wrongFlag}" alt="wrong-flag">` : ``}
           `;
         }else if(currentGame===4){
-          // (요청) 선택한 국기 이미지 + X표시, 정답 국기 아래에
           const wrong = countries.find(c=>c.country_ko===choice);
           html += `
             <p>선택하신 국기는 <b>${choice}</b>의 국기입니다.</p>
@@ -238,7 +255,7 @@
       if(questionIndex < 5){
         html += `<button class="nav-btn" onclick="showQuestion()">다음 문제</button>`;
       }else{
-        saveScore(); // 저장 후 결과로
+        saveScore();
         html += `<button class="nav-btn" onclick="showResult()">결과 확인</button>`;
       }
       html += `<button class="nav-btn" onclick="showHome()">처음으로</button>`;
@@ -277,13 +294,10 @@
     function buildRankingSummary(gameType, player, sc, tm){
       const data = JSON.parse(localStorage.getItem("leaderboard") || "{}");
       const list = data[gameType] || [];
-      // 방금 기록의 순위 찾기 (동점 다수 대비 타임스탬프 고려)
       let idx = -1;
       for(let i=0;i<list.length;i++){
         const e = list[i];
-        if(e.player===player && e.score===sc && e.time===tm){
-          idx = i; break;
-        }
+        if(e.player===player && e.score===sc && e.time===tm){ idx = i; break; }
       }
       const rankText = (idx>-1 && idx<10) ? `축하합니다! ${idx+1}위입니다!! 🎉` : `아쉽네요... 분발하세요!!`;
 
@@ -298,7 +312,6 @@
       return { rankText, tableHTML };
     }
 
-    // 순위 확인 메뉴/화면
     function showLeaderboardMenu(){
       document.getElementById("app").innerHTML = `
         <div class="card">
@@ -328,12 +341,10 @@
       `;
     }
 
-    // 공부 모드 (필터)
+    // 공부 모드
     function showStudy(filter="전체"){
       let filtered = countries;
-      if(filter !== "전체"){
-        filtered = countries.filter(c=>c.continent_ko===filter);
-      }
+      if(filter !== "전체"){ filtered = countries.filter(c=>c.continent_ko===filter); }
       const rows = [...filtered]
         .sort((a,b)=> a.continent_ko.localeCompare(b.continent_ko,"ko") || a.country_ko.localeCompare(b.country_ko,"ko"))
         .map(c=>`
@@ -347,25 +358,3 @@
       document.getElementById("app").innerHTML = `
         <div class="card">
           <h2>나라-수도-국기 공부</h2>
-          <div>
-            <button class="small-btn" onclick="showStudy('전체')">전체보기</button>
-            <button class="small-btn" onclick="showStudy('아메리카')">아메리카</button>
-            <button class="small-btn" onclick="showStudy('아시아')">아시아</button>
-            <button class="small-btn" onclick="showStudy('아프리카')">아프리카</button>
-            <button class="small-btn" onclick="showStudy('오세아니아')">오세아니아</button>
-            <button class="small-btn" onclick="showStudy('유럽')">유럽</button>
-          </div>
-          <table>
-            <tr><th>대륙</th><th>국기</th><th>국가</th><th>수도</th></tr>
-            ${rows}
-          </table>
-          <button class="nav-btn" onclick="showHome()">처음으로</button>
-        </div>
-      `;
-    }
-
-    // 시작
-    loadData();
-  </script>
-</body>
-</html>

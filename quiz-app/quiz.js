@@ -14,7 +14,7 @@ const ENTRY_PLAYER = "entry.1585525493";
 const ENTRY_SCORE  = "entry.1461471053";
 const ENTRY_TIME   = "entry.1265121960";
 
-// Google Sheet CSV 공개 링크
+// Google Sheet CSV 공개 링크 (반드시 output=csv)
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPmVODPefnMPa5S2iauwxw9aM39Ugd1r1-RnPm5JVIswvmuCB6UmdMgY2PAMvotjPrkEj6No8XU3lF/pub?output=csv";
 
 // ====================== 데이터 로드 ======================
@@ -236,4 +236,91 @@ function showLeaderboardMenu() {
       <h2>순위 확인</h2>
       <button class="option-btn" onclick="showLeaderboard(1)">1. 나라 → 수도</button>
       <button class="option-btn" onclick="showLeaderboard(2)">2. 수도 → 나라</button>
-      <button class="option-btn" onclick="showLeaderboard(3)">3. 국기 → 나라</bu
+      <button class="option-btn" onclick="showLeaderboard(3)">3. 국기 → 나라</button>
+      <button class="option-btn" onclick="showLeaderboard(4)">4. 나라 → 국기</button>
+      <button class="option-btn" onclick="showLeaderboard(5)">5. 세계지도 퀴즈</button>
+      <button class="nav-btn" onclick="showHome()">처음으로</button>
+    </div>
+  `;
+}
+
+function showLeaderboard(gameType) {
+  loadScoresFromSheet(data => {
+    const filtered = data.filter(d => Number(d.game) === gameType);
+    filtered.sort((a, b) => (b.score - a.score) || (a.time - b.time));
+    const rows = filtered.slice(0, 10).map((e, i) =>
+      `<tr><td>${i + 1}</td><td>${e.player}</td><td>${e.score}</td><td>${e.time}초</td></tr>`
+    ).join("");
+    document.getElementById("app").innerHTML = `
+      <div class="card">
+        <h2>게임 ${gameType} 순위</h2>
+        <table>
+          <tr><th>순위</th><th>이름</th><th>점수</th><th>시간(초)</th></tr>
+          ${rows}
+        </table>
+        <button class="nav-btn" onclick="showLeaderboardMenu()">뒤로</button>
+      </div>
+    `;
+  });
+}
+
+// ====================== Google Form 저장 (URL-Encoded) ======================
+function saveScoreToSheet(game, player, score, time) {
+  const formBody = new URLSearchParams();
+  formBody.append(ENTRY_GAME, game.toString());
+  formBody.append(ENTRY_PLAYER, player);
+  formBody.append(ENTRY_SCORE, score.toString());
+  formBody.append(ENTRY_TIME, time.toString());
+
+  fetch(FORM_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: formBody.toString(),
+    mode: "no-cors"
+  })
+  .then(() => {
+    console.log("폼 제출 시도 완료");
+  })
+  .catch(err => console.error("폼 제출 오류:", err));
+}
+
+// ====================== Google Sheet CSV 불러오기 ======================
+function loadScoresFromSheet(callback) {
+  fetch(CSV_URL)
+    .then(res => res.text())
+    .then(text => {
+      const rows = text.trim().split("\n").map(line => line.split(","));
+      // 시트 구조: Timestamp | Game | Player | Score | Time
+      const data = rows.slice(1).map(r => ({
+        timestamp: r[0],
+        game: r[1],
+        player: r[2],
+        score: Number(r[3]),
+        time: Number(r[4])
+      }));
+      callback(data);
+    })
+    .catch(err => console.error("불러오기 오류:", err));
+}
+
+// ====================== 공부 모드 ======================
+function showStudy(filter = "전체") {
+  let filtered = countries;
+  if (filter !== "전체") {
+    filtered = countries.filter(c => c.continent_ko === filter);
+  }
+  const rows = [...filtered]
+    .sort((a, b) => a.continent_ko.localeCompare(b.continent_ko, "ko") || a.country_ko.localeCompare(b.country_ko, "ko"))
+    .map(c => `
+      <tr>
+        <td>${c.continent_ko}</td>
+        <td><img src="${c.flag}" alt="flag" width="40"></td>
+        <td>${c.country_ko}</td>
+        <td>${c.capital_ko || ""}</td>
+      </tr>`).join("");
+
+  document.getElementById("app").innerHTML = `
+    <div class="card">
+      <h2>나라-수도-국기 공부</h2>
+      <div>
+        <button class="small-btn" onclick="showStudy('전체')">전체보기</button>

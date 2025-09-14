@@ -1,76 +1,137 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>나라 맞추기 게임</title>
+  <meta charset="UTF-8">
+  <title>나라 수도 국기 학습 게임</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #fefaf6;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #fce4ec, #e1f5fe);
       margin: 0;
       padding: 0;
       text-align: center;
     }
-    h1 { color: #444; margin-top: 20px; }
-    .container { padding: 15px; }
-    button {
-      background-color: #ffcccb;
-      border: none; border-radius: 10px;
-      padding: 12px 20px; margin: 8px;
-      font-size: 16px; cursor: pointer; transition: .3s;
-      width: 80%; max-width: 280px;
+    h1 {
+      margin: 15px 0;
+      font-size: 22px;
     }
-    button:hover { background-color: #ffb6c1; }
-    .flag-img { width: 120px; height: auto; margin: 10px; border: 2px solid #ddd; border-radius: 8px; }
-    .game-area { margin-top: 20px; }
+    .container {
+      max-width: 480px;
+      margin: auto;
+      padding: 10px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 15px;
+      padding: 15px;
+      margin: 10px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    button {
+      display: block;
+      width: 100%;
+      margin: 8px 0;
+      padding: 12px;
+      font-size: 15px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background-color: #ffccbc;
+      transition: background 0.3s;
+    }
+    button:hover { background-color: #ffab91; }
     .hidden { display: none; }
-    .question-count { font-weight: bold; margin: 10px; }
-    .back-btn { margin-top: 20px; background-color: #add8e6; }
-    .flag-label { font-weight: 700; margin-bottom: 10px; color:#333; }
-    /* 공부 모드 테이블 */
-    .study-table { width:95%; max-width:800px; margin:15px auto; border-collapse:collapse; background:#fff; }
-    .study-table th, .study-table td { border:1px solid #ddd; padding:8px; text-align:center; }
-    .study-table th { background:#ffe4e1; }
+    .flag-img {
+      width: 90px;
+      height: auto;
+      margin: 8px auto;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      display: block;
+    }
+    .options {
+      margin-top: 10px;
+    }
+    .options button {
+      font-size: 14px;
+      padding: 10px;
+    }
+    .feedback {
+      margin-top: 12px;
+      font-size: 15px;
+    }
+    .study-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    .study-table th, .study-table td {
+      border: 1px solid #ccc;
+      padding: 5px;
+    }
+    .study-table th { background-color: #f8bbd0; }
+    .continent-buttons button {
+      display: inline-block;
+      width: auto;
+      margin: 4px;
+      font-size: 13px;
+      padding: 6px 10px;
+      background-color: #d1c4e9;
+    }
+    .nav-btn {
+      background-color: #b2dfdb;
+      font-size: 14px;
+      padding: 8px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
-  <h1>🌏 나라 맞추기 게임1.4</h1>
+  <div class="container">
+    <h1>나라 수도 국기 학습 게임1.5</h1>
 
-  <!-- 메뉴 -->
-  <div class="container" id="menu">
-    <p>모든 게임은 10문제가 출제됩니다.<br>오답 시 정답을 알려주고, 버튼을 눌러 다음 문제로 넘어갑니다.</p>
-    <button onclick="startGame(1)">1. 나라 이름 → 수도 맞추기</button>
-    <button onclick="startGame(2)">2. 수도 이름 → 나라 맞추기</button>
-    <button onclick="startGame(3)">3. 국기 → 나라 맞추기</button>
-    <button onclick="startGame(4)">4. 나라 이름 → 국기 맞추기</button>
-    <button onclick="showStudy()">5. 나라-수도-국기 공부</button>
-  </div>
+    <!-- 메인 메뉴 -->
+    <div id="mainMenu" class="card">
+      <p>각 게임은 5문제가 출제됩니다.</p>
+      <button onclick="startGame(1)">1. 나라 → 수도 맞추기</button>
+      <button onclick="startGame(2)">2. 수도 → 나라 맞추기</button>
+      <button onclick="startGame(3)">3. 국기 → 나라 맞추기</button>
+      <button onclick="startGame(4)">4. 나라 → 국기 맞추기</button>
+      <button onclick="showStudy()">5. 나라-수도-국기 공부</button>
+    </div>
 
-  <!-- 게임 영역 -->
-  <div class="container game-area hidden" id="gameArea">
-    <div id="questionCount" class="question-count"></div>
-    <div id="question"></div>
-    <img id="flag" class="flag-img hidden" alt="문제 국기" />
-    <div id="options"></div>
-    <div id="feedback"></div>
-    <button id="nextBtn" class="hidden" onclick="nextQuestion()">다음 문제</button>
-    <button class="back-btn" onclick="goHome()">⬅ 초기 화면</button>
-  </div>
+    <!-- 게임 영역 -->
+    <div id="gameArea" class="hidden card">
+      <div id="question"></div>
+      <div id="options" class="options"></div>
+      <div id="feedback" class="feedback"></div>
+      <button id="nextBtn" class="hidden" onclick="nextQuestion()">다음 문제</button>
+      <button class="nav-btn" onclick="goHome()">처음으로</button>
+    </div>
 
-  <!-- 공부 모드 -->
-  <div class="container hidden" id="studyArea">
-    <h2>나라-수도-국기 공부</h2>
-    <div id="continentFilters"></div>
-    <table class="study-table" id="studyTable">
-      <thead>
-        <tr>
-          <th>대륙</th><th>국기</th><th>나라</th><th>수도</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button class="back-btn" onclick="goHome()">⬅ 초기 화면</button>
+    <!-- 공부 모드 -->
+    <div id="studyArea" class="hidden card">
+      <h3>나라-수도-국기 공부</h3>
+      <div class="continent-buttons">
+        <button onclick="filterContinent('전체')">전체</button>
+        <button onclick="filterContinent('아시아')">아시아</button>
+        <button onclick="filterContinent('유럽')">유럽</button>
+        <button onclick="filterContinent('아프리카')">아프리카</button>
+        <button onclick="filterContinent('아메리카')">아메리카</button>
+        <button onclick="filterContinent('오세아니아')">오세아니아</button>
+      </div>
+      <table class="study-table" id="studyTable">
+        <thead>
+          <tr>
+            <th>대륙</th><th>국기</th><th>국가</th><th>수도</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button class="nav-btn" onclick="goHome()">처음으로</button>
+    </div>
   </div>
 
   <script>
@@ -79,123 +140,123 @@
     let currentQuestion = 0;
     let score = 0;
     let selectedQuestions = [];
-    let startTime;
 
-    async function loadCountries() {
+    async function loadData() {
       const res = await fetch("https://shinsangwon.github.io/1001/countries.json");
       countries = await res.json();
     }
 
     function goHome() {
-      document.getElementById("menu").classList.remove("hidden");
+      document.getElementById("mainMenu").classList.remove("hidden");
       document.getElementById("gameArea").classList.add("hidden");
       document.getElementById("studyArea").classList.add("hidden");
       document.getElementById("feedback").innerHTML = "";
-      document.getElementById("flag").classList.add("hidden");
-      score = 0;
-      currentQuestion = 0;
+      document.getElementById("options").innerHTML = "";
     }
 
-    function startGame(gameType) {
-      currentGame = gameType;
-      document.getElementById("menu").classList.add("hidden");
+    function startGame(game) {
+      currentGame = game;
+      currentQuestion = 0;
+      score = 0;
+      selectedQuestions = countries.sort(() => 0.5 - Math.random()).slice(0, 5);
+      document.getElementById("mainMenu").classList.add("hidden");
       document.getElementById("gameArea").classList.remove("hidden");
-      score = 0;
-      currentQuestion = 0;
-      selectedQuestions = shuffle([...countries]).slice(0, 10);
-      startTime = new Date();
-      loadQuestion();
+      showQuestion();
     }
 
-    function loadQuestion() {
-      // 초기화
-      document.getElementById("feedback").innerHTML = "";
-      document.getElementById("nextBtn").classList.add("hidden");
-      document.getElementById("flag").classList.add("hidden");
-
-      if (currentQuestion >= selectedQuestions.length) { endGame(); return; }
-
+    function showQuestion() {
       const q = selectedQuestions[currentQuestion];
-      document.getElementById("questionCount").innerText = `문제 ${currentQuestion + 1} / 10`;
-
-      // 보기 후보 4개 + 정답 포함 보장
-      let options = shuffle([...countries]).slice(0, 4);
-      if (!options.some(c => c.country_ko === q.country_ko)) options[0] = q;
-      options = shuffle(options);
+      const optionsEl = document.getElementById("options");
+      const feedbackEl = document.getElementById("feedback");
+      optionsEl.innerHTML = "";
+      feedbackEl.innerHTML = "";
+      document.getElementById("nextBtn").classList.add("hidden");
 
       let questionText = "";
+      let correctAnswer = "";
+      let options = [];
+
       if (currentGame === 1) {
-        questionText = `(${q.continent_ko}) ${q.country_ko}의 수도는 어디일까요?`;
-        showFlag(q.flag);
-        renderOptions(options.map(c => c.capital_ko), q.capital_ko);
+        questionText = `[${q.continent_ko}] ${q.country_ko}의 수도는 어디일까요? (${currentQuestion+1}/5)`;
+        correctAnswer = q.capital_ko;
+        options = generateOptions("capital_ko", correctAnswer);
       } else if (currentGame === 2) {
-        questionText = `(${q.continent_ko}) ${q.capital_ko}는 어느 나라의 수도일까요?`;
-        renderOptions(options.map(c => c.country_ko), q.country_ko);
+        questionText = `${q.capital_ko}는 어느 나라의 수도일까요? (${currentQuestion+1}/5)`;
+        correctAnswer = q.country_ko;
+        options = generateOptions("country_ko", correctAnswer);
       } else if (currentGame === 3) {
-        questionText = `(${q.continent_ko}) 이 국기는 어느 나라일까요?`;
-        showFlag(q.flag); // 문제용 국기
-        renderOptions(options.map(c => c.country_ko), q.country_ko);
+        questionText = `이 국기는 어느 나라의 국기일까요? (${currentQuestion+1}/5)`;
+        correctAnswer = q.country_ko;
+        options = generateOptions("country_ko", correctAnswer);
       } else if (currentGame === 4) {
-        questionText = `(${q.continent_ko}) ${q.country_ko}의 국기는 무엇일까요?`;
-        renderOptions(options.map(c => c.flag), q.flag, true);
+        questionText = `[${q.continent_ko}] ${q.country_ko}의 국기는 어느 것일까요? (${currentQuestion+1}/5)`;
+        correctAnswer = q.flag;
+        options = generateOptions("flag", correctAnswer);
       }
 
-      document.getElementById("question").innerText = questionText;
-    }
+      document.getElementById("question").innerHTML = questionText;
+      if (currentGame === 3) {
+        const img = document.createElement("img");
+        img.src = q.flag;
+        img.className = "flag-img";
+        document.getElementById("question").appendChild(img);
+      }
 
-    function showFlag(src) {
-      const img = document.getElementById("flag");
-      img.src = src;
-      img.classList.remove("hidden");
-    }
-
-    function renderOptions(optionList, correctAnswer, isFlag = false) {
-      const container = document.getElementById("options");
-      container.innerHTML = "";
-      optionList.forEach(opt => {
+      options.forEach(opt => {
         const btn = document.createElement("button");
-        btn.innerHTML = isFlag ? `<img src="${opt}" class="flag-img" alt="보기 국기" />` : opt;
-        btn.onclick = () => checkAnswer(opt, correctAnswer, isFlag);
-        container.appendChild(btn);
+        if (currentGame === 4) {
+          const img = document.createElement("img");
+          img.src = opt;
+          img.className = "flag-img";
+          btn.appendChild(img);
+          btn.onclick = () => checkAnswer(opt, correctAnswer, true);
+        } else {
+          btn.textContent = opt;
+          btn.onclick = () => checkAnswer(opt, correctAnswer);
+        }
+        optionsEl.appendChild(btn);
       });
+    }
+
+    function generateOptions(field, correct) {
+      const opts = new Set([correct]);
+      while (opts.size < 5) {
+        const rand = countries[Math.floor(Math.random() * countries.length)][field];
+        opts.add(rand);
+      }
+      return Array.from(opts).sort(() => 0.5 - Math.random());
     }
 
     function checkAnswer(selected, correct, isFlag = false) {
       const feedbackEl = document.getElementById("feedback");
       let html = "";
 
-      const isCorrect = selected === correct;
-      if (isCorrect) {
+      if (selected === correct) {
         html = "정답입니다! 🎉";
         score++;
       } else {
-        // 3번: 국기 → 나라 (오답 해설: '선택한 나라의 국기'와 '정답 나라의 국기' 둘 다 표시)
         if (currentGame === 3) {
-          // 문제용 국기는 숨김(헷갈림 방지)
-          document.getElementById("flag").classList.add("hidden");
-
           const chosenCountry = countries.find(c => c.country_ko === selected);
-          const correctCountry = countries.find(c => c.country_ko === correct);
-
           const chosenFlag = chosenCountry ? chosenCountry.flag : "";
-          const correctFlag = correctCountry ? correctCountry.flag : "";
-
           html = `
             ❌ 오답입니다.<br>
-            선택하신 아래 국기는 <b>${selected}</b>의 국기입니다.
-            <div><img src="${chosenFlag}" class="flag-img" alt="선택한 국기"></div>
-            <div class="flag-label">${selected}</div>
-            정답인 <b>${correct}</b>의 국기는 아래의 국기입니다.
-            <div><img src="${correctFlag}" class="flag-img" alt="정답 국기"></div>
-            <div class="flag-label">${correct}</div>
+            정답은 <b>${correct}</b> 입니다.<br>
+            선택하신 <b>${selected}</b>의 국기는 다음과 같습니다.
+            <div><img src="${chosenFlag}" class="flag-img"></div>
           `;
-        }
-        // 4번: 나라 → 국기 (오답 시 정답 국기 보여주기)
-        else if (currentGame === 4 && isFlag) {
-          html = `오답입니다! 정답은 아래 국기입니다.<br><img src="${correct}" class="flag-img" alt="정답 국기" />`;
-        }
-        // 1,2번: 텍스트 정답 안내
-        else {
+        } else if (currentGame === 4 && isFlag) {
+          const chosenCountry = countries.find(c => c.flag === selected);
+          const chosenName = chosenCountry ? chosenCountry.country_ko : "알 수 없음";
+          const correctCountry = countries.find(c => c.flag === correct);
+          const correctName = correctCountry ? correctCountry.country_ko : "알 수 없음";
+          html = `
+            ❌ 오답입니다.<br>
+            선택하신 국기는 <b>${chosenName}</b>의 국기입니다.
+            <div><img src="${selected}" class="flag-img"></div>
+            정답인 <b>${correctName}</b>의 국기는 다음과 같습니다.
+            <div><img src="${correct}" class="flag-img"></div>
+          `;
+        } else {
           html = `오답입니다! 정답은 <b>${correct}</b> 입니다.`;
         }
       }
@@ -206,62 +267,52 @@
 
     function nextQuestion() {
       currentQuestion++;
-      loadQuestion();
-    }
-
-    function endGame() {
-      const duration = ((new Date() - startTime) / 1000).toFixed(1);
-      document.getElementById("question").innerHTML =
-        `게임 종료!<br>정답 개수: ${score}/10<br>풀이 시간: ${duration}초`;
-      document.getElementById("options").innerHTML = "";
-      document.getElementById("flag").classList.add("hidden");
-      document.getElementById("questionCount").innerText = "";
-      document.getElementById("nextBtn").classList.add("hidden");
-      document.getElementById("feedback").innerHTML = "";
+      if (currentQuestion < 5) {
+        showQuestion();
+      } else {
+        document.getElementById("question").innerHTML = `게임 종료! 점수: ${score}/5`;
+        document.getElementById("options").innerHTML = "";
+        document.getElementById("feedback").innerHTML = "";
+        document.getElementById("nextBtn").classList.add("hidden");
+      }
     }
 
     function showStudy() {
-      document.getElementById("menu").classList.add("hidden");
+      document.getElementById("mainMenu").classList.add("hidden");
       document.getElementById("studyArea").classList.remove("hidden");
-      renderContinentFilters();
-      renderStudyTable('전체');
+      renderStudyTable("전체");
     }
 
-    function renderContinentFilters() {
-      const container = document.getElementById("continentFilters");
-      const continents = [...new Set(countries.map(c => c.continent_ko))].sort((a,b)=>a.localeCompare(b,'ko'));
-      container.innerHTML = `<button onclick="renderStudyTable('전체')">전체</button>`;
-      continents.forEach(cont => {
-        container.innerHTML += `<button onclick="renderStudyTable('${cont}')">${cont}</button>`;
-      });
+    function filterContinent(continent) {
+      renderStudyTable(continent);
     }
 
-    function renderStudyTable(filter) {
+    function renderStudyTable(continent) {
       const tbody = document.querySelector("#studyTable tbody");
       tbody.innerHTML = "";
-      let filtered = filter === "전체" ? countries : countries.filter(c => c.continent_ko === filter);
-
+      let filtered = countries;
+      if (continent !== "전체") {
+        filtered = countries.filter(c => c.continent_ko === continent);
+      }
       filtered.sort((a, b) => {
-        const contCmp = a.continent_ko.localeCompare(b.continent_ko, 'ko');
-        if (contCmp !== 0) return contCmp;
-        return a.country_ko.localeCompare(b.country_ko, 'ko');
+        if (a.continent_ko === b.continent_ko) {
+          return a.country_ko.localeCompare(b.country_ko, "ko");
+        }
+        return a.continent_ko.localeCompare(b.continent_ko, "ko");
       });
-
       filtered.forEach(c => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${c.continent_ko}</td>
-            <td><img src="${c.flag}" class="flag-img" alt="${c.country_ko} 국기"></td>
-            <td>${c.country_ko}</td>
-            <td>${c.capital_ko ?? "-"}</td>
-          </tr>
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${c.continent_ko}</td>
+          <td><img src="${c.flag}" class="flag-img"></td>
+          <td>${c.country_ko}</td>
+          <td>${c.capital_ko || "-"}</td>
         `;
+        tbody.appendChild(row);
       });
     }
 
-    function shuffle(arr){ return arr.sort(() => Math.random() - 0.5); }
-
-    loadCountries();
+    loadData();
   </script>
 </body>
 </html>
